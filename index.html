@@ -1,0 +1,5271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Race</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+body{display:flex;justify-content:center;align-items:center;font-family:'Segoe UI',Arial,sans-serif}
+
+#game-container{
+  position:relative;
+  width:min(100vw,calc(100vh * 16 / 9));
+  height:min(100vh,calc(100vw * 9 / 16));
+  background:#0A0A1A;
+  overflow:hidden;
+}
+/* Horizontal flip: framebuffer X was mirrored vs screen (A/D felt swapped, REAL appeared left). Touch/HUD adjusted below. */
+canvas{width:100%;height:100%;display:block;transform:scaleX(-1)}
+
+#ui{position:absolute;inset:0;pointer-events:none}
+#ui>*{pointer-events:auto}
+.hidden{display:none!important}
+
+#hud{position:absolute;inset:0;pointer-events:none;z-index:10}
+#hud>*{pointer-events:auto}
+#hp{position:absolute;top:16px;left:20px;font-size:clamp(14px,2vw,22px);user-select:none;color:rgba(200,255,255,.9);text-shadow:0 0 8px rgba(0,255,255,.4);font-weight:700;letter-spacing:.06em}
+.hf{color:#EF476F;text-shadow:0 0 8px #EF476F;transition:transform .2s}
+.hh{color:#EF476F;text-shadow:0 0 6px #EF476F;opacity:0.5;transition:transform .2s}
+.he{color:#333;text-shadow:none;opacity:0.35}
+.heart-pop{animation:hpop .3s ease-out}
+@keyframes hpop{0%{transform:scale(1.4)}100%{transform:scale(1)}}
+
+#score-display{position:absolute;top:16px;right:20px;font-size:clamp(18px,2.5vw,28px);font-weight:bold;color:#fff;text-shadow:0 0 10px #00FFFF}
+.timer-hud{
+  position:absolute;bottom:16px;left:50%;transform:translateX(-50%);
+  z-index:11;pointer-events:none;text-align:center;font-weight:700;
+  font-size:clamp(14px,1.9vw,20px);color:#ffffff;text-shadow:0 0 10px rgba(0,255,255,.35),0 0 2px #000;
+  letter-spacing:.08em;user-select:none;line-height:1;
+}
+.boost-hud{
+  position:absolute;bottom:48px;left:50%;transform:translateX(-50%);
+  z-index:11;pointer-events:none;text-align:center;font-weight:bold;
+  font-size:clamp(13px,1.8vw,18px);color:#66ffee;text-shadow:0 0 12px rgba(0,255,230,.55),0 0 2px #000;
+  letter-spacing:.06em;user-select:none;line-height:1.25;
+}
+.boost-hud .sub{font-size:0.78em;font-weight:600;color:rgba(200,255,250,.75);margin-top:2px;letter-spacing:.04em}
+.ch{position:absolute;bottom:16px;font-size:clamp(11px,1.4vw,15px);color:rgba(255,255,255,.45);font-weight:bold;user-select:none;letter-spacing:.05em}
+/* #hl = AI / A (left); #hr = REAL / D (right) — matches setLane hint flashes */
+#hl{left:20px;right:auto}
+#hr{right:20px;left:auto}
+.hint-flash{animation:hflash .08s ease-out}
+@keyframes hflash{0%{color:#fff}100%{color:rgba(255,255,255,.45)}}
+.hint-denied{animation:hshake .12s ease-out;color:#FFDDDD!important}
+@keyframes hshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+
+.screen{position:absolute;inset:0;display:flex;justify-content:center;align-items:center;background:rgba(10,10,26,.85);backdrop-filter:blur(4px);z-index:20}
+.pc{background:rgba(20,10,40,.92);border:1px solid rgba(255,0,255,.3);border-radius:16px;padding:32px 48px;text-align:center;color:#fff;max-width:500px;box-shadow:0 0 30px rgba(255,0,255,.1)}
+.pc h1{font-size:clamp(40px,6vw,64px);font-weight:900;letter-spacing:.15em;color:#FF00FF;text-shadow:0 0 20px #FF00FF,0 0 40px rgba(255,0,255,.5);margin-bottom:12px}
+.pc h2{font-size:clamp(28px,4vw,48px);font-weight:900;letter-spacing:.1em;margin-bottom:12px}
+.pc .sub{font-size:clamp(14px,1.8vw,18px);line-height:1.6;opacity:.8;margin-bottom:16px}
+.ci{margin-bottom:16px;font-size:clamp(12px,1.4vw,15px)}
+.ci p{margin:4px 0;color:#00FFFF;text-shadow:0 0 5px rgba(0,255,255,.5)}
+
+.nb{
+  background:transparent;border:2px solid #FF00FF;color:#FF00FF;padding:12px 36px;
+  font-size:clamp(14px,2vw,20px);font-weight:bold;cursor:pointer;text-transform:uppercase;
+  letter-spacing:.1em;border-radius:8px;transition:all .2s;margin:8px;
+  text-shadow:0 0 7px #FF00FF;box-shadow:0 0 10px rgba(255,0,255,.3),inset 0 0 10px rgba(255,0,255,.05);
+  font-family:inherit;
+}
+.nb:hover,.nb:focus{background:rgba(255,0,255,.15);box-shadow:0 0 20px rgba(255,0,255,.5),inset 0 0 20px rgba(255,0,255,.1)}
+.bs{margin-top:12px;font-size:clamp(12px,1.4vw,15px);color:#FFD166;text-shadow:0 0 5px rgba(255,209,102,.5)}
+.pulse{animation:bp 1.2s ease-in-out infinite}
+@keyframes bp{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+
+#flash-overlay{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .08s;z-index:15}
+#floating-texts{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:16}
+.ft{position:absolute;font-weight:bold;font-size:clamp(16px,2.5vw,24px);pointer-events:none;animation:fu .8s ease-out forwards;text-shadow:0 0 8px currentColor}
+@keyframes fu{0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-50px) scale(1.3)}}
+
+#go[data-r="win"] h2{color:#06D6A0;text-shadow:0 0 20px #06D6A0}
+#go[data-r="lose"] h2{color:#EF476F;text-shadow:0 0 20px #EF476F}
+
+/* Top challenge thumbnail hidden for now — image only on 3D billboard */
+#img-panel{
+  display:none!important;
+  visibility:hidden;
+  position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:clamp(160px,28%,300px);aspect-ratio:16/10;
+  z-index:12;pointer-events:none;
+  margin:0;padding:0;
+}
+#img-panel.hidden{display:none!important}
+#panel-img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;z-index:0;border-radius:6px;
+  background:#0a0a1a;
+}
+#panel-label{
+  position:absolute;bottom:2px;left:50%;transform:translateX(-50%);
+  font-size:clamp(10px,1.2vw,14px);font-weight:bold;letter-spacing:.12em;
+  color:#fff;text-shadow:0 0 6px currentColor;z-index:2;
+  padding:2px 10px;background:rgba(10,10,26,.7);border-radius:4px;
+}
+</style>
+</head>
+<body>
+<div id="game-container">
+  <canvas id="gc"></canvas>
+  <div id="ui">
+    <div id="hud" class="hidden">
+      <div id="hp"></div>
+      <div id="score-display">Coins: 0</div>
+      <div id="img-panel" class="hidden">
+        <img id="panel-img" src="" alt="">
+        <div id="panel-label">AI or REAL?</div>
+      </div>
+      <div id="timer-hud" class="timer-hud">0.000s</div>
+      <div id="boost-hud" class="boost-hud hidden" aria-live="polite">
+        <div id="boost-line1"></div>
+        <div id="boost-line2" class="sub"></div>
+      </div>
+      <div class="ch" id="hl">&lt;- A - AI</div>
+      <div class="ch" id="hr">REAL - D -&gt;</div>
+    </div>
+    <div id="menu" class="screen">
+      <div class="pc">
+        <h1>AI RACE</h1>
+        <p class="sub">Is it AI-generated or Real?<br>Endless run — pick the right lane and grab coins!</p>
+        <div class="ci">
+          <p>&lt;- A - AI</p>
+          <p>REAL - D -&gt;</p>
+          <p>Collect coins for score · teal gems · W = speed boost</p>
+          <p>Wrong lane or crash = game over (one run)</p>
+        </div>
+        <button id="bp" class="nb pulse" onclick="window._start()">PLAY</button>
+        <p id="mb" class="bs"></p>
+      </div>
+    </div>
+    <div id="pause" class="screen hidden">
+      <div class="pc">
+        <h2>PAUSED</h2>
+        <p class="sub">← A = AI &nbsp;|&nbsp; D → = REAL &nbsp;|&nbsp; W = boost &nbsp;|&nbsp; coins = score</p>
+        <button class="nb" onclick="window._resume()">RESUME</button>
+      </div>
+    </div>
+    <div id="go" class="screen hidden">
+      <div class="pc">
+        <h2 id="rt"></h2>
+        <p id="rx" class="sub"></p>
+        <p id="rb" class="bs"></p>
+        <button class="nb" onclick="window._start()">RETRY</button>
+      </div>
+    </div>
+    <div id="flash-overlay"></div>
+    <div id="floating-texts"></div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports":{
+    "three":"https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
+import { Sky } from 'three/addons/objects/Sky.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+/** Meshy / GLB exports often use KHR_draco_mesh_compression — same decoder version as importmap `three`. */
+const DRACO_DECODER_PATH = 'https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/';
+const sharedDracoLoader = new DRACOLoader();
+sharedDracoLoader.setDecoderPath(DRACO_DECODER_PATH);
+
+function makeGLTFLoader() {
+  const loader = new GLTFLoader();
+  loader.setDRACOLoader(sharedDracoLoader);
+  return loader;
+}
+
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+const C = {
+  FWD_SPEED: 8, SPRINT: 10, LANE_DAMP: 25,
+  /** W-key boost (after collecting pickups). */
+  BOOST_SPEED: 15,
+  BOOST_DURATION: 3.5,
+  BOOST_MAX_CHARGES: 3,
+  BOOST_INTERVAL: 38,
+  BOOST_FIRST_Z: 36,
+  // 6 lanes: indices 0-2 = AI side (left), 3-5 = REAL side (right)
+  LANES: [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5],
+  LANE_START: 1, // start in middle of AI side
+  TILE_LEN: 20, TILE_N: 6, ROAD_W: 6, GRID_SP: 1,
+  // Real side: grass strip width past x = +ROAD_W/2, shared ground height for props
+  REAL_GRASS_DEPTH: 14,
+  REAL_GROUND_Y: -0.02,
+  GATE_DIST: 35, GATE_DEC: 2, GATE_BEHIND: 10, GATE_POOL: 4,
+  /** Challenge billboard path distance ahead of player (follows you like a fixed horizon). */
+  HORIZON_BB_AHEAD: 96,
+  OBSTACLE_INTERVAL: 24,
+  OBSTACLE_FIRST_Z: 52,
+  /** Image gate at `pathZ`: keep obstacles out of [pathZ - back, pathZ + fwd] so lane labels / floor decals stay readable. */
+  OBSTACLE_GATE_Z_BACK: 5.5,
+  OBSTACLE_GATE_Z_FORWARD: 13,
+  /** Min |Δz| vs ring-portal anchors and `S.nextPortalZ`. */
+  OBSTACLE_PORTAL_Z_CLEAR: 11,
+  /** When candidate obstacle Z conflicts, nudge forward until clear. */
+  OBSTACLE_Z_RESOLVE_STEP: 2.2,
+  PORTAL_INTERVAL: 58,
+  PORTAL_FIRST_Z: 48,
+  COIN_INTERVAL: 16,
+  COIN_FIRST_Z: 28,
+  COIN_VALUE: 1,
+  GATE_COIN_BONUS: 2,
+  CAM_Y: 2.5, CAM_ZOFF: -5, CAM_LOOK: 10, CAM_LERP: 0.08,
+  /** Default gameplay vertical FOV (degrees). */
+  CAM_FOV: 60,
+  NEAR_MS: 250, LOCK_MS: 200,
+  BOB_SPD: 3.9, BOB_AMP: 0.04, VEH_Y: 0.25,
+  /** Sinusoidal centerline x(z); lateral offset from center = across-track coordinate (lanes, physics). */
+  ROAD_CURVE_AMP: 2.35,
+  ROAD_CURVE_FREQ: 0.062,
+  /** Skip AI skyline buildings when mean |dx/dz| on the tile exceeds this (curved section). */
+  ROAD_BUILDING_MEAN_XP: 0.055,
+  ROAD_RIBBON_SEG: 52,
+  /** Extra Y after `lookAt` (local −Z aims at path center). Use `Math.PI` if the façade still faces away from the road. */
+  ENV_BUILDING_YAW_EXTRA: THREE.MathUtils.degToRad(-80),
+  /** GLB real-side buildings: path lateral offset from centerline (+ = deeper into real / grass). */
+  REAL_BUILDING_LATERAL: 8.75,
+};
+const COL = {
+  CYAN: 0x00FFFF, MAG: 0xFF00FF, BG: 0x0A0A1A, ROAD: 0x111122,
+  OK: 0x06D6A0, ERR: 0xEF476F, VEH: 0x06A3FF, LIGHT: 0xFFD166, GRAY: 0x8E8E8E,
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+const S = {
+  mode: 'LOADING', coins: 0, gatesCorrect: 0,
+  targetGates: 0, gatesSpawned: 0,
+  best: parseInt(localStorage.getItem('AI_Race_v1_best_coins') || localStorage.getItem('AI_Race_v1_highscore') || '0'),
+  pZ: 0,
+  lane: C.LANE_START,               // index into C.LANES (0-5)
+  tgtX: C.LANES[C.LANE_START],      // world-space X target
+  curX: C.LANES[C.LANE_START],      // world-space X current
+  speed: C.FWD_SPEED, tScale: 1, locked: false, lastSwitch: 0,
+  sprintT: 0,
+  boostT: 0,
+  boostCharges: 0,
+  runTime: 0,
+  nextBoostZ: C.BOOST_FIRST_Z,
+  nextGate: C.GATE_DIST,
+  nextObstacleZ: C.OBSTACLE_FIRST_Z,
+  nextPortalZ: C.PORTAL_FIRST_Z,
+  nextCoinZ: C.COIN_FIRST_Z,
+  elapsed: 0, result: null,
+  /** REAL-side `newspaper.png` props: one at 10s run time, one at 40s. */
+  npPaper10: false,
+  npPaper40: false,
+  dronePicked: false,
+  droneFireReady: false,
+  droneConsumed: false,
+};
+const fx = {
+  shakeI: 0,
+  shakeT: 0,
+  bloomBase: 0.36,
+  /** Short bloom spike on obstacle hit (old run used score×0.2; this is a briefer, slightly softer hit). */
+  obstacleBloomT: 0,
+  obstacleBloomDur: 0.5,
+  obstacleBloomPeak: 0.52,
+  /** Peak bloom while obstacleBloomT decays (set per hit: black bump vs red crash). */
+  obstacleBloomPeakActive: 0.52,
+  /** Horizon billboard image-change pulse (≤1s, ease in/out). */
+  bbPulseOn: false,
+  bbPulseElapsed: 0,
+  bbPulseDur: 1,
+};
+
+// ═══════════════════════════════════════════════════════
+// DOM
+// ═══════════════════════════════════════════════════════
+const container = document.getElementById('game-container');
+const canvas = document.getElementById('gc');
+const dom = {
+  hud: document.getElementById('hud'),
+  hp: document.getElementById('hp'),
+  sc: document.getElementById('score-display'),
+  menu: document.getElementById('menu'),
+  pause: document.getElementById('pause'),
+  go: document.getElementById('go'),
+  rt: document.getElementById('rt'),
+  rx: document.getElementById('rx'),
+  rb: document.getElementById('rb'),
+  mb: document.getElementById('mb'),
+  flash: document.getElementById('flash-overlay'),
+  floats: document.getElementById('floating-texts'),
+  hl: document.getElementById('hl'),
+  hr: document.getElementById('hr'),
+  timerHud: document.getElementById('timer-hud'),
+  boostHud: document.getElementById('boost-hud'),
+  boostL1: document.getElementById('boost-line1'),
+  boostL2: document.getElementById('boost-line2'),
+  imgPanel: document.getElementById('img-panel'),
+  panelImg: document.getElementById('panel-img'),
+  panelLabel: document.getElementById('panel-label'),
+};
+
+// ═══════════════════════════════════════════════════════
+// SOUND (Web Audio — short SFX per game action)
+// ═══════════════════════════════════════════════════════
+const sfx = (function () {
+  let ctx = null;
+  /** Looping wind/hover (neon) + grind (real); built on first PLAYING tick after `ensure()`. */
+  let laneAmb = null;
+  const LANE_AMB_X_TH = 0.03;
+
+  function getCtx() {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    return ctx;
+  }
+  function ensure() {
+    const c = getCtx();
+    if (c && c.state === 'suspended') c.resume().catch(() => {});
+    return c;
+  }
+  function tone(freq, dur, type, vol, freqEnd) {
+    const c = ensure();
+    if (!c) return;
+    const t0 = c.currentTime;
+    const o = c.createOscillator();
+    const g = c.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (freqEnd != null) o.frequency.exponentialRampToValueAtTime(Math.max(40, freqEnd), t0 + dur);
+    g.gain.setValueAtTime(vol, t0);
+    g.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    o.connect(g);
+    g.connect(c.destination);
+    o.start(t0);
+    o.stop(t0 + dur + 0.03);
+  }
+  function chord(freqs, dur, type, vol) {
+    const c = ensure();
+    if (!c) return;
+    const t0 = c.currentTime;
+    const master = c.createGain();
+    master.gain.setValueAtTime(vol, t0);
+    master.gain.exponentialRampToValueAtTime(0.0008, t0 + dur);
+    master.connect(c.destination);
+    for (const f of freqs) {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t0);
+      o.connect(master);
+      o.start(t0);
+      o.stop(t0 + dur + 0.03);
+    }
+  }
+  function initLaneAmbience() {
+    const c = getCtx();
+    if (!c || laneAmb) return;
+    const sampleRate = c.sampleRate;
+    const dur = 2;
+    const buf = c.createBuffer(1, sampleRate * dur, sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+
+    const noise = c.createBufferSource();
+    noise.buffer = buf;
+    noise.loop = true;
+
+    const neonHP = c.createBiquadFilter();
+    neonHP.type = 'highpass';
+    neonHP.frequency.value = 360;
+    const neonLP = c.createBiquadFilter();
+    neonLP.type = 'lowpass';
+    neonLP.Q.value = 0.42;
+    neonLP.frequency.value = 5400;
+
+    const windLfo = c.createOscillator();
+    windLfo.type = 'sine';
+    windLfo.frequency.value = 0.24;
+    const windDepth = c.createGain();
+    windDepth.gain.value = 2000;
+    windLfo.connect(windDepth);
+    windDepth.connect(neonLP.frequency);
+
+    const neonG = c.createGain();
+    neonG.gain.value = 0;
+    noise.connect(neonHP);
+    neonHP.connect(neonLP);
+    neonLP.connect(neonG);
+
+    const ambMaster = c.createGain();
+    ambMaster.gain.value = 0.46;
+    neonG.connect(ambMaster);
+    ambMaster.connect(c.destination);
+
+    const t0 = c.currentTime;
+    noise.start(t0);
+    windLfo.start(t0);
+
+    laneAmb = { neonG, ambMaster };
+  }
+  function tickLaneAmbience(mode, curX, speedNorm) {
+    const c = getCtx();
+    if (!c) return;
+    if (mode !== 'PLAYING') {
+      if (laneAmb) {
+        const t = c.currentTime;
+        laneAmb.neonG.gain.setTargetAtTime(0, t, 0.12);
+      }
+      rollingAmbEl.volume = 0;
+      rollingAmbEl.pause();
+      return;
+    }
+    initLaneAmbience();
+    if (!laneAmb) return;
+    const t = c.currentTime;
+    const sn = Math.min(2.1, Math.max(0.4, speedNorm || 1));
+    const neonVol = 0.042 * sn * 0.7;
+    const rollingVol = Math.min(0.3, 0.11 + 0.09 * (sn - 0.4));
+    if (curX < -LANE_AMB_X_TH) {
+      laneAmb.neonG.gain.setTargetAtTime(neonVol, t, 0.16);
+      rollingAmbEl.volume = 0;
+      rollingAmbEl.pause();
+    } else if (curX > LANE_AMB_X_TH) {
+      laneAmb.neonG.gain.setTargetAtTime(0, t, 0.2);
+      rollingAmbEl.volume = rollingVol;
+      rollingAmbEl.playbackRate = Math.min(1.22, Math.max(0.8, 0.84 + (sn - 0.4) * 0.32));
+      rollingAmbEl.play().catch(() => {});
+    } else {
+      laneAmb.neonG.gain.setTargetAtTime(0, t, 0.1);
+      rollingAmbEl.volume = 0;
+      rollingAmbEl.pause();
+    }
+  }
+  return {
+    ensure,
+    startRun() { chord([523.25, 659.25, 783.99], 0.14, 'sine', 0.055); },
+    lane() { tone(400, 0.08, 'triangle', 0.048, 560); },
+    denied() { tone(95, 0.11, 'square', 0.04, 72); },
+    correct() {
+      tone(784, 0.07, 'sine', 0.065);
+      setTimeout(() => tone(1046.5, 0.11, 'sine', 0.055), 65);
+    },
+    nearMiss() { tone(1320, 0.05, 'sine', 0.042); setTimeout(() => tone(1660, 0.06, 'sine', 0.035), 45); },
+    hurt() { tone(165, 0.15, 'sawtooth', 0.048, 75); },
+    winFan() { chord([392, 493.88, 587.33, 783.99], 0.38, 'triangle', 0.065); },
+    lose() { tone(195, 0.28, 'sawtooth', 0.05, 55); },
+    pauseIn() { tone(260, 0.07, 'sine', 0.032); },
+    pauseOut() { tone(440, 0.08, 'sine', 0.034); },
+    boostPickup() { tone(660, 0.09, 'sine', 0.052, 920); },
+    /** Boost activation: short layered sweep + click so W-boost reads clearly over BGM. */
+    boostUse() {
+      const c = ensure();
+      if (!c) return;
+      const t0 = c.currentTime;
+      const master = c.createGain();
+      master.gain.setValueAtTime(0.12, t0);
+      master.gain.exponentialRampToValueAtTime(0.0009, t0 + 0.22);
+      master.connect(c.destination);
+      const o1 = c.createOscillator();
+      o1.type = 'sawtooth';
+      o1.frequency.setValueAtTime(120, t0);
+      o1.frequency.exponentialRampToValueAtTime(2400, t0 + 0.14);
+      const g1 = c.createGain();
+      g1.gain.setValueAtTime(0.55, t0);
+      o1.connect(g1);
+      g1.connect(master);
+      o1.start(t0);
+      o1.stop(t0 + 0.18);
+      const o2 = c.createOscillator();
+      o2.type = 'triangle';
+      o2.frequency.setValueAtTime(380, t0 + 0.02);
+      o2.frequency.exponentialRampToValueAtTime(2200, t0 + 0.11);
+      const g2 = c.createGain();
+      g2.gain.setValueAtTime(0.35, t0 + 0.02);
+      o2.connect(g2);
+      g2.connect(master);
+      o2.start(t0 + 0.02);
+      o2.stop(t0 + 0.16);
+      setTimeout(() => tone(1046.5, 0.045, 'square', 0.055, 3150), 40);
+    },
+    droneLaser() {
+      const c = ensure();
+      if (!c) return;
+      const t0 = c.currentTime;
+      const master = c.createGain();
+      master.gain.setValueAtTime(0.09, t0);
+      master.gain.exponentialRampToValueAtTime(0.0008, t0 + 0.2);
+      master.connect(c.destination);
+      const o1 = c.createOscillator();
+      o1.type = 'sawtooth';
+      o1.frequency.setValueAtTime(2100, t0);
+      o1.frequency.exponentialRampToValueAtTime(420, t0 + 0.18);
+      const g1 = c.createGain();
+      g1.gain.setValueAtTime(0.5, t0);
+      o1.connect(g1);
+      g1.connect(master);
+      o1.start(t0);
+      o1.stop(t0 + 0.2);
+      const o2 = c.createOscillator();
+      o2.type = 'square';
+      o2.frequency.setValueAtTime(960, t0 + 0.015);
+      o2.frequency.exponentialRampToValueAtTime(520, t0 + 0.16);
+      const g2 = c.createGain();
+      g2.gain.setValueAtTime(0.24, t0 + 0.015);
+      o2.connect(g2);
+      g2.connect(master);
+      o2.start(t0 + 0.015);
+      o2.stop(t0 + 0.18);
+    },
+    tickLaneAmbience,
+  };
+})();
+
+// ═══════════════════════════════════════════════════════
+// THREE.JS SETUP
+// ═══════════════════════════════════════════════════════
+const scene = new THREE.Scene();
+// Base fill so letterboxing is not pure black (procedural sky domes cover most of the frame per side).
+scene.background = new THREE.Color(0x070a18);
+// Global fog for meshes without custom split fog (right road, grass, props).
+scene.fog = new THREE.FogExp2(0x0c1020, 0.0045);
+
+const camera = new THREE.PerspectiveCamera(C.CAM_FOV, 16 / 9, 0.1, 520);
+// Split-world rendering: AI (night/neon) vs Real (day) use different lights; avatar uses neutral fill.
+const L_AI = 0;
+const L_REAL = 1;
+const L_AVATAR = 2;
+/** Selective bloom: meshes that also enable this layer contribute to UnrealBloom blur (desktop only). */
+const L_BLOOM = 3;
+camera.layers.enable(L_AI);
+camera.layers.enable(L_REAL);
+camera.layers.enable(L_AVATAR);
+camera.layers.enable(L_BLOOM);
+
+function applyWorldLayer(root, layerId) {
+  root.traverse(o => {
+    if (o.isLight) return;
+    o.layers.set(layerId);
+  });
+}
+function enableDualWorldLayer(root) {
+  root.traverse(o => {
+    if (o.isLight) return;
+    o.layers.enable(L_AI);
+    o.layers.enable(L_REAL);
+  });
+}
+
+// Shared uniforms for world-split (materials inject via onBeforeCompile).
+const worldSplitUniforms = {
+  wsSplitOffset: { value: 0 },
+  wsBlendWidth: { value: 0.58 },
+  wsSplitTime: { value: 0 },
+  wsWaveAmp: { value: 0.1 },
+  wsWaveFreq: { value: 2.2 },
+  wsWaveZ: { value: 0.32 },
+  wsEdgeWidth: { value: 0.16 },
+  wsEdgeInt: { value: 2.1 },
+  wsNeonLightMul: { value: 1.14 },
+  wsSunLightMul: { value: 1.02 },
+  wsFogNeon: { value: new THREE.Color(0x030510) },
+  wsFogSun: { value: new THREE.Color(0xc5ddf0) },
+  wsFogDenNeon: { value: 0.0072 },
+  wsFogDenSun: { value: 0.0026 },
+};
+
+/** Baseline split-world light multipliers (restored after billboard focus pulse). */
+const WS_LIGHT_BASE = {
+  neon: worldSplitUniforms.wsNeonLightMul.value,
+  sun: worldSplitUniforms.wsSunLightMul.value,
+};
+/** Baseline exponential fog density on `scene.fog` (road / non-split meshes). */
+const SCENE_FOG_BASE_DENSITY = scene.fog && scene.fog.isFogExp2 ? scene.fog.density : 0.0045;
+
+/**
+ * Per-world visual blend + split-edge glow + asymmetric exp fog (no scene.fog — all in-shader).
+ * Uses onBeforeCompile only; keeps existing material type/parameters.
+ */
+function installWorldSplitOnMaterial(mat) {
+  if (!mat || mat.userData.worldSplitInstalled) return;
+  mat.userData.worldSplitInstalled = true;
+  // Custom exp fog in shader; disable scene fog to avoid double fogging.
+  mat.fog = false;
+  const prev = mat.onBeforeCompile;
+  mat.onBeforeCompile = (shader) => {
+    if (typeof prev === 'function') prev(shader);
+    for (const k of Object.keys(worldSplitUniforms)) {
+      shader.uniforms[k] = worldSplitUniforms[k];
+    }
+    const isBasic = !!mat.isMeshBasicMaterial;
+    const vFogDecl = isBasic ? '\nvarying float vWsFogDist;\n' : '';
+    const vFogAssign = isBasic
+      ? '\nvWsFogDist = length( ( modelViewMatrix * vec4( transformed, 1.0 ) ).xyz );\n'
+      : '';
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>
+varying vec3 vWorldSplitPos;${vFogDecl}`)
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+vWorldSplitPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;${vFogAssign}`,
+      );
+    const splitBlock = `
+vec3 wsWaveOffset() {
+  return vec3( wsWaveAmp * sin( wsSplitTime * wsWaveFreq + vWorldSplitPos.z * wsWaveZ ), 0.0, 0.0 );
+}
+float wsBoundary() {
+  return vWorldSplitPos.x - wsSplitOffset + wsWaveOffset().x;
+}
+float wsMask() {
+  float b = wsBoundary();
+  return smoothstep( -wsBlendWidth, wsBlendWidth, b );
+}
+float wsEdge() {
+  float b = wsBoundary();
+  return ( 1.0 - smoothstep( 0.0, wsEdgeWidth, abs( b ) ) ) * wsEdgeInt;
+}
+`;
+    const canOpaqueFrag =
+      mat.isMeshStandardMaterial ||
+      mat.isMeshPhysicalMaterial ||
+      mat.isMeshLambertMaterial ||
+      mat.isMeshPhongMaterial ||
+      mat.isMeshToonMaterial;
+    if (canOpaqueFrag) {
+      // Do not patch roughnessmap_fragment — it breaks MeshPhysical / some map paths and drops the program.
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>
+varying vec3 vWorldSplitPos;
+${splitBlock}`)
+        .replace(
+          '#include <opaque_fragment>',
+          `{
+  float wsW = wsMask();
+  float ed = wsEdge();
+  vec3 edgeCol = vec3( 0.35, 0.72, 1.25 ) * ed;
+  outgoingLight *= mix( vec3( wsNeonLightMul ), vec3( wsSunLightMul ), wsW );
+  outgoingLight += edgeCol;
+  float fdist = length( vViewPosition );
+  vec3 fCol = mix( wsFogNeon, wsFogSun, wsW );
+  float fD = mix( wsFogDenNeon, wsFogDenSun, wsW );
+  float fogF = 1.0 - exp( - fD * fD * fdist * fdist );
+  outgoingLight = mix( outgoingLight, fCol, clamp( fogF, 0.0, 0.92 ) );
+}
+#include <opaque_fragment>`,
+        );
+    } else if (mat.isMeshBasicMaterial) {
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', `#include <common>
+varying vec3 vWorldSplitPos;
+varying float vWsFogDist;
+${splitBlock}`)
+        .replace(
+          '#include <opaque_fragment>',
+          `{
+  float wsW = wsMask();
+  float ed = wsEdge();
+  outgoingLight *= mix( vec3( 0.92, 0.9, 1.08 ), vec3( 1.04, 1.01, 0.95 ), wsW );
+  outgoingLight += vec3( 0.25, 0.65, 1.0 ) * ed;
+  vec3 fCol = mix( wsFogNeon, wsFogSun, wsW );
+  float fD = mix( wsFogDenNeon, wsFogDenSun, wsW );
+  float fogF = 1.0 - exp( - fD * fD * vWsFogDist * vWsFogDist );
+  outgoingLight = mix( outgoingLight, fCol, clamp( fogF, 0.0, 0.88 ) );
+}
+#include <opaque_fragment>`,
+        );
+    }
+  };
+  mat.needsUpdate = true;
+}
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+const DEBUG_SKY = new URLSearchParams(location.search).get('debugSky') === '1';
+if (DEBUG_SKY) renderer.debug.checkShaderErrors = true;
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ReinhardToneMapping;
+renderer.toneMappingExposure = 0.82;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.localClippingEnabled = true;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const isMobile = navigator.maxTouchPoints > 0;
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(canvas.clientWidth || 960, canvas.clientHeight || 540),
+  isMobile ? 0.42 : 0.74,
+  isMobile ? 0.44 : 0.58,
+  isMobile ? 0.68 : 0.52
+);
+/** Softer threshold on desktop so AI neon / road bloom reads more atmospheric. */
+bloomPass.threshold = isMobile ? 0.7 : 0.44;
+
+const bloomLayer = new THREE.Layers();
+bloomLayer.set(L_BLOOM);
+const darkBloomMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+const darkBloomSwap = {};
+
+function darkenNonBloomedForBloom(obj) {
+  if (!obj.isMesh || !obj.material) return;
+  if (bloomLayer.test(obj.layers) === true) return;
+  // Horizon challenge billboard uses the same map material every frame; swapping it for the
+  // bloom pass and restoring after can race async texture assignment and leave a blank panel.
+  if (horizonBB.group && obj.parent === horizonBB.group) return;
+  darkBloomSwap[obj.uuid] = obj.material;
+  obj.material = darkBloomMaterial;
+}
+
+function restoreBloomDarkened(obj) {
+  if (darkBloomSwap[obj.uuid]) {
+    obj.material = darkBloomSwap[obj.uuid];
+    delete darkBloomSwap[obj.uuid];
+  }
+}
+
+const mixBloomVS = `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }`;
+const mixBloomFS = `uniform sampler2D baseTexture; uniform sampler2D bloomTexture; varying vec2 vUv; void main() { gl_FragColor = texture2D( baseTexture, vUv ) + vec4( 1.0 ) * texture2D( bloomTexture, vUv ); }`;
+
+let finalComposer;
+let bloomComposer;
+
+if (!isMobile) {
+  bloomComposer = new EffectComposer(renderer);
+  bloomComposer.renderToScreen = false;
+  bloomComposer.addPass(new RenderPass(scene, camera));
+  bloomComposer.addPass(bloomPass);
+
+  const mixPass = new ShaderPass(
+    new THREE.ShaderMaterial({
+      uniforms: {
+        baseTexture: { value: null },
+        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+      },
+      vertexShader: mixBloomVS,
+      fragmentShader: mixBloomFS,
+      toneMapped: false,
+    }),
+    'baseTexture'
+  );
+  mixPass.needsSwap = true;
+
+  finalComposer = new EffectComposer(renderer);
+  finalComposer.addPass(new RenderPass(scene, camera));
+  finalComposer.addPass(mixPass);
+  finalComposer.addPass(new OutputPass());
+} else {
+  finalComposer = new EffectComposer(renderer);
+  finalComposer.addPass(new RenderPass(scene, camera));
+  finalComposer.addPass(bloomPass);
+  finalComposer.addPass(new OutputPass());
+}
+
+/** @deprecated use finalComposer — kept for any stray refs */
+const composer = finalComposer;
+
+// —— AI side (night / neon) — only affects layer L_AI
+const ambAI = new THREE.AmbientLight(0x3344aa, 0.14);
+ambAI.layers.set(L_AI);
+scene.add(ambAI);
+const keyAI = new THREE.DirectionalLight(0x8899ff, 0.85);
+keyAI.position.set(-14, 16, 8);
+keyAI.layers.set(L_AI);
+keyAI.castShadow = false;
+keyAI.shadow.mapSize.set(isMobile ? 512 : 1024);
+keyAI.shadow.radius = 3;
+keyAI.shadow.bias = -0.00018;
+keyAI.shadow.normalBias = 0.028;
+{
+  const kc = keyAI.shadow.camera;
+  kc.left = -52;
+  kc.right = 34;
+  kc.top = 48;
+  kc.bottom = -42;
+  kc.near = 2;
+  kc.far = 260;
+  kc.updateProjectionMatrix();
+}
+scene.add(keyAI);
+const rimAI = new THREE.DirectionalLight(0xff44cc, 0.42);
+rimAI.position.set(-4, 5, -6);
+rimAI.layers.set(L_AI);
+scene.add(rimAI);
+
+// —— Real side (day / sun) — only affects layer L_REAL
+const ambReal = new THREE.AmbientLight(0xe8eef8, 0.36);
+ambReal.layers.set(L_REAL);
+scene.add(ambReal);
+const sunReal = new THREE.DirectionalLight(0xfff5e0, 0.88);
+sunReal.position.set(16, 22, 10);
+sunReal.layers.set(L_REAL);
+scene.add(sunReal);
+const fillReal = new THREE.DirectionalLight(0xb8cfff, 0.22);
+fillReal.position.set(-6, 10, 14);
+fillReal.layers.set(L_REAL);
+scene.add(fillReal);
+
+// —— Player avatar: neutral lighting (not night or day keyed)
+const ambAv = new THREE.AmbientLight(0xeeeeff, 0.42);
+ambAv.layers.set(L_AVATAR);
+scene.add(ambAv);
+const keyAv = new THREE.DirectionalLight(0xffffff, 0.52);
+keyAv.position.set(4, 14, 6);
+keyAv.layers.set(L_AVATAR);
+scene.add(keyAv);
+
+// Neon-side fill (AI layer only) — strong color separation vs warm sun.
+const neonPtBlue = new THREE.PointLight(0x5599ff, 2.4, 52, 1.9);
+neonPtBlue.position.set(-6.5, 2.6, 12);
+neonPtBlue.layers.set(L_AI);
+scene.add(neonPtBlue);
+const neonPtPurple = new THREE.PointLight(0x9966ff, 1.85, 44, 1.85);
+neonPtPurple.position.set(-2.8, 1.9, 22);
+neonPtPurple.layers.set(L_AI);
+scene.add(neonPtPurple);
+const neonPtPink = new THREE.PointLight(0xff55cc, 1.65, 40, 1.9);
+neonPtPink.position.set(-4.2, 3.1, -6);
+neonPtPink.layers.set(L_AI);
+scene.add(neonPtPink);
+
+sunReal.castShadow = false;
+sunReal.shadow.mapSize.set(1024, 1024);
+sunReal.shadow.radius = 4;
+sunReal.shadow.bias = -0.00022;
+sunReal.shadow.normalBias = 0.025;
+{
+  const c = sunReal.shadow.camera;
+  c.left = -28;
+  c.right = 28;
+  c.top = 32;
+  c.bottom = -12;
+  c.near = 4;
+  c.far = 110;
+  c.updateProjectionMatrix();
+}
+
+function updateWorldLightingByPathPosition() {
+  const t = THREE.MathUtils.clamp((S.curX + 2.5) / 5, 0, 1);
+  const n = 1 - t;
+  ambAI.intensity = 0.08 + n * 0.18;
+  ambReal.intensity = 0.34 + t * 0.28;
+  keyAI.intensity = 0.52 + n * 0.62;
+  rimAI.intensity = 0.28 + n * 0.34;
+  sunReal.intensity = 0.5 + t * 0.72;
+  fillReal.intensity = 0.1 + t * 0.32;
+  neonPtBlue.intensity = 1.4 + n * 2.2;
+  neonPtPurple.intensity = 1.1 + n * 1.75;
+  neonPtPink.intensity = 0.95 + n * 1.55;
+}
+
+const clock = new THREE.Clock(false);
+
+// ═══════════════════════════════════════════════════════
+// TEXTURE HELPERS
+// ═══════════════════════════════════════════════════════
+function mkTex(text, size, col, bg, w, h) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const x = cv.getContext('2d');
+  if (bg) { x.fillStyle = bg; x.fillRect(0, 0, w, h); }
+  x.fillStyle = col;
+  x.font = `bold ${size}px Arial,sans-serif`;
+  x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.fillText(text, w / 2, h / 2);
+  const t = new THREE.CanvasTexture(cv);
+  t.minFilter = THREE.LinearFilter;
+  return t;
+}
+
+function mkGateTex(text, size, fill, bg, w, h) {
+  const cv = document.createElement('canvas');
+  cv.width = w; cv.height = h;
+  const g = cv.getContext('2d');
+  if (bg) { g.fillStyle = bg; g.fillRect(0, 0, w, h); }
+  g.font = `900 ${size}px "Segoe UI",Arial,sans-serif`;
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  const cx = w / 2; const cy = h / 2;
+  g.lineWidth = Math.max(6, size * 0.14);
+  g.strokeStyle = 'rgba(0,0,0,0.92)';
+  g.lineJoin = 'round';
+  g.strokeText(text, cx, cy);
+  g.fillStyle = fill;
+  g.fillText(text, cx, cy);
+  const t = new THREE.CanvasTexture(cv);
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+/** Canvas uses scaleX(-1); flip U so gate decals stay legible after the CSS mirror. */
+function flipTexForCanvasMirror(t) {
+  t.wrapS = THREE.RepeatWrapping;
+  t.repeat.x = -1;
+  t.offset.x = 1;
+}
+
+// ═══════════════════════════════════════════════════════
+// IMAGE DATA (real files)
+// ═══════════════════════════════════════════════════════
+/** Paths relative to this HTML file (file:// and static servers). */
+function assetUrl(relativePath) {
+  try {
+    return new URL(relativePath, import.meta.url).href;
+  } catch (_) {
+    return relativePath;
+  }
+}
+
+// Background music: `projects/game/public/assets/song.mp3` (loaded as `assets/song.mp3`).
+const bgmEl = new Audio(assetUrl('assets/song.mp3'));
+bgmEl.loop = true;
+bgmEl.preload = 'auto';
+bgmEl.volume = 0.34;
+/** REAL-lane ambience: `projects/game/public/assets/rolling.mp3` */
+const rollingAmbEl = new Audio(assetUrl('assets/rolling.mp3'));
+rollingAmbEl.loop = true;
+rollingAmbEl.preload = 'auto';
+rollingAmbEl.volume = 0;
+function bgmPlayFromStart() {
+  try {
+    bgmEl.currentTime = 0;
+  } catch (_) {}
+  bgmEl.play().catch(() => {});
+}
+function bgmPause() {
+  try {
+    bgmEl.pause();
+  } catch (_) {}
+}
+function bgmResume() {
+  bgmEl.play().catch(() => {});
+}
+
+const texLoader = new THREE.TextureLoader();
+/**
+ * Large AI PNGs can fire TextureLoader `onLoad` before `decode()` / layout finishes, so
+ * `naturalWidth` stays 0 briefly — `nextImage` then yields a "loaded" entry that still
+ * cannot be sampled. Wait for decode + positive dimensions before marking ready.
+ */
+function finalizeTextureEntry(d, tex) {
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const im = tex.image;
+  const markReady = () => {
+    const w = im && (im.naturalWidth || im.width || 0);
+    const h = im && (im.naturalHeight || im.height || 0);
+    if (w > 0 && h > 0) {
+      d.loaded = true;
+      d.failed = false;
+      return true;
+    }
+    return false;
+  };
+  const pollDims = (frames) => {
+    if (markReady()) return;
+    if (frames > 180) {
+      d.loaded = false;
+      d.failed = true;
+      console.warn('[AI Race] Image never became drawable:', d.src);
+      return;
+    }
+    requestAnimationFrame(() => pollDims(frames + 1));
+  };
+  const afterDecode = () => {
+    if (markReady()) return;
+    pollDims(0);
+  };
+  if (im && typeof im.decode === 'function') {
+    im.decode().then(afterDecode).catch(afterDecode);
+  } else {
+    afterDecode();
+  }
+}
+// Filenames + extensions must match files under public/assets/images/ (see folder on disk).
+const aiImageFiles = [
+  'AI_image.png',
+  'AI_image2.png',
+  'AI_image3.png',
+  'AI_image4.png',
+  'AI_image5.png',
+  'ai_image6.png',
+  'ai_image7.png',
+  'AI_image8.png',
+  'ai_image9.png',
+  'ai_image10.png',
+  'ai_image11.png',
+  'ai_image12.png',
+  'ai_image13.png',
+  'ai_image14.png',
+  'ai_image15.png',
+  'ai_image16.png',
+  'ai_image17.png',
+  'ai_image18.png',
+  'ai_image19.png',
+  'ai_image20.png',
+];
+const realImageFiles = [
+  'real_image.jpg',
+  'real_image2.jpg',
+  'real_image3.jpg',
+  'real_image4.jpg',
+  'real_image5.jpg',
+  'real_image6.jpg',
+  'real_image7.jpg',
+  'real_image8.jpg',
+  'real_image9.jpg',
+  'real_image10.jpg',
+  'real_image11.jpg',
+  'real_image12.jpeg',
+  'real_image13.jpeg',
+  'real_image14.jpeg',
+  'real_image15.jpg',
+  'real_image16.jpg',
+  'real_image17.jpg',
+  'real_image18.jpg',
+  'real_image19.jpg',
+  'real_image20.jpg',
+];
+const imageSet = [
+  ...aiImageFiles.map(file => ({ src: assetUrl(`assets/images/${file}`), ans: 'ai' })),
+  ...realImageFiles.map(file => ({ src: assetUrl(`assets/images/${file}`), ans: 'real' })),
+];
+imageSet.forEach(d => {
+  d.loaded = false;
+  d.failed = false;
+  d.tex = texLoader.load(
+    d.src,
+    tex => finalizeTextureEntry(d, tex),
+    undefined,
+    () => {
+      d.failed = true;
+      d.loaded = false;
+      console.warn('[AI Race] Could not load image:', d.src);
+    }
+  );
+  d.tex.colorSpace = THREE.SRGBColorSpace;
+});
+let roundImages = [];
+let imgIdx = 0;
+function shuffleImages(list = imageSet) {
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [list[i], list[j]] = [list[j], list[i]];
+  }
+}
+function refreshRoundImages() {
+  const loadedUsable = imageSet.filter((img) => !img.failed && img.loaded);
+  const fallbackUsable = imageSet.filter((img) => !img.failed);
+  roundImages = loadedUsable.length > 0
+    ? loadedUsable.slice()
+    : (fallbackUsable.length > 0 ? fallbackUsable.slice() : imageSet.slice());
+  shuffleImages(roundImages);
+  imgIdx = 0;
+  S.targetGates = roundImages.length;
+}
+refreshRoundImages();
+/** Sentinel: `spawnIfNeeded` should wait (texture decode / network still in progress). */
+const NEXT_IMAGE_PENDING = {};
+function nextImage() {
+  while (imgIdx < roundImages.length) {
+    const img = roundImages[imgIdx];
+    if (img.failed) {
+      imgIdx++;
+      continue;
+    }
+    if (!img.loaded) {
+      return NEXT_IMAGE_PENDING;
+    }
+    imgIdx++;
+    return img;
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════
+// ROAD SYSTEM
+// ═══════════════════════════════════════════════════════
+const roadTiles = [];
+/** REAL street lanes: `assets/images/road.jpg` only (neon left lanes use road2 in `applyNeonLaneRoadColorMap`). */
+const rightRoadMaterials = [];
+const sharedLeftRoadMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1512,
+  roughness: 0.82,
+  metalness: 0.06,
+  // DoubleSide: curved ribbon + FrontSide culled the AI half for some camera/curve cases (read as “transparent”).
+  side: THREE.DoubleSide,
+  transparent: false,
+  opacity: 1,
+  depthWrite: true,
+  depthTest: true,
+  blending: THREE.NormalBlending,
+});
+const splitSeamRoadMat = new THREE.MeshBasicMaterial({
+  color: 0x5ed3ff,
+  side: THREE.DoubleSide,
+  toneMapped: false,
+});
+const sharedRightRoadMat = new THREE.MeshStandardMaterial({
+  color: 0x1a1512,
+  roughness: 0.82,
+  metalness: 0.06,
+  side: THREE.DoubleSide,
+});
+rightRoadMaterials.push(sharedRightRoadMat);
+
+/** Grayscale wear: bright = rougher (cracks), dark = oilier / smoother patches. */
+function getRealRoadWearRoughnessMap() {
+  const w = 512;
+  const h = 512;
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#b5aea6';
+  g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 18; i++) {
+    const ox = Math.random() * w;
+    const oy = Math.random() * h;
+    const rw = 40 + Math.random() * 120;
+    const rh = 25 + Math.random() * 90;
+    const gr = g.createRadialGradient(ox, oy, 0, ox, oy, Math.max(rw, rh));
+    gr.addColorStop(0, `rgba(28,24,20,${0.35 + Math.random() * 0.35})`);
+    gr.addColorStop(0.55, `rgba(55,50,45,${0.12 + Math.random() * 0.12})`);
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr;
+    g.beginPath();
+    g.ellipse(ox, oy, rw, rh, Math.random() * Math.PI, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.strokeStyle = 'rgba(210,205,198,0.22)';
+  g.lineWidth = 0.9;
+  for (let n = 0; n < 42; n++) {
+    let x = Math.random() * w;
+    let y = Math.random() * h;
+    g.beginPath();
+    g.moveTo(x, y);
+    const segs = 4 + Math.floor(Math.random() * 10);
+    for (let s = 0; s < segs; s++) {
+      x += (Math.random() - 0.5) * 22;
+      y += 4 + Math.random() * 16;
+      g.lineTo(x, y);
+    }
+    g.stroke();
+  }
+  g.strokeStyle = 'rgba(235,232,228,0.14)';
+  g.lineWidth = 1.1;
+  for (let i = 0; i < 26; i++) {
+    g.beginPath();
+    g.moveTo(Math.random() * w, Math.random() * h);
+    g.lineTo(Math.random() * w, Math.random() * h);
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.repeat.set(2.2, C.TILE_LEN / 6.5);
+  tex.needsUpdate = true;
+  return tex;
+}
+sharedRightRoadMat.roughnessMap = getRealRoadWearRoughnessMap();
+sharedRightRoadMat.roughness = 0.88;
+sharedLeftRoadMat.roughnessMap = sharedRightRoadMat.roughnessMap;
+sharedLeftRoadMat.roughness = sharedRightRoadMat.roughness;
+sharedLeftRoadMat.metalness = sharedRightRoadMat.metalness;
+const pillarGeoShared = new THREE.BoxGeometry(0.1, 3.5, 0.1);
+
+function roadCurveX(z) {
+  return C.ROAD_CURVE_AMP * Math.sin(C.ROAD_CURVE_FREQ * z);
+}
+function roadCurveXp(z) {
+  return C.ROAD_CURVE_AMP * C.ROAD_CURVE_FREQ * Math.cos(C.ROAD_CURVE_FREQ * z);
+}
+function roadYawAtZ(z) {
+  return Math.atan2(roadCurveXp(z), 1);
+}
+/** Path-arc delta for stripe (non-gate) dark blocks — down-road from the slot center. */
+const NEON_GRID_BLACK_AHEAD = 3.45;
+/** Path-arc offset from the matched gate Z so odd-gate dark blocks sit clearly past the arch. */
+const NEON_GRID_BLACK_AFTER_GATE = 6.25;
+/** No stripe dark blocks before this path Z (just past first image gate). */
+const NEON_GRID_BLACK_STRIPE_MINZ = C.GATE_DIST + 12;
+/** Extra lateral inset (path-space, more negative) so the black box sits deeper in the neon strip away from the road. */
+const NEON_GRID_BLACK_LAT_DEEPEN = 3.1;
+/** Positive path lateral nudge toward the road / REAL side (screen right from the AI neon strip). */
+const NEON_GRID_BLACK_LAT_RIGHT = 8.4;
+/** World XZ from path-arc length z and lateral offset (same as former world x on straight road). */
+function worldXZFromPath(lateral, pathZ) {
+  const xp = roadCurveXp(pathZ);
+  const L = Math.sqrt(1 + xp * xp);
+  const rx = 1 / L;
+  const rz = -xp / L;
+  const cx = roadCurveX(pathZ);
+  return { x: cx + rx * lateral, z: pathZ + rz * lateral };
+}
+
+// --- REAL sidewalk newspapers (`assets/images/newspaper.png`) at 10s and 40s run time ---
+let newspaperMat = null;
+const newspaperMeshes = [];
+function loadNewspaperAsset() {
+  texLoader.load(
+    assetUrl('assets/images/newspaper.png'),
+    (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      const maxA = renderer.capabilities.getMaxAnisotropy?.() || 1;
+      if (maxA > 1) tex.anisotropy = Math.min(8, maxA);
+      tex.needsUpdate = true;
+      newspaperMat = new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: true,
+      });
+      installWorldSplitOnMaterial(newspaperMat);
+      trySpawnDueNewspapers();
+    },
+    undefined,
+    () => console.warn('[Real env] assets/images/newspaper.png missing or failed to load'),
+  );
+}
+function clearNewspaperMeshes() {
+  while (newspaperMeshes.length) {
+    const m = newspaperMeshes.pop();
+    scene.remove(m);
+    if (m.geometry) m.geometry.dispose();
+  }
+}
+function spawnRealNewspaper(pathZ, lateralPathX) {
+  if (!newspaperMat) return;
+  const paperW = 1.12;
+  const paperH = 1.5;
+  const geo = new THREE.PlaneGeometry(paperW, paperH);
+  const mesh = new THREE.Mesh(geo, newspaperMat);
+  const w = worldXZFromPath(lateralPathX, pathZ);
+  const gy = C.REAL_GROUND_Y + 0.004;
+  mesh.position.set(w.x, gy, w.z);
+  const yaw = roadYawAtZ(pathZ);
+  mesh.rotation.order = 'YXZ';
+  mesh.rotation.y = yaw + (Math.random() - 0.5) * 0.35;
+  mesh.rotation.x = -Math.PI / 2;
+  applyWorldLayer(mesh, L_REAL);
+  scene.add(mesh);
+  newspaperMeshes.push(mesh);
+}
+function trySpawnDueNewspapers() {
+  if (S.mode !== 'PLAYING' || !newspaperMat) return;
+  const hw = C.ROAD_W / 2;
+  const ahead = 28;
+  if (!S.npPaper10 && S.runTime >= 10) {
+    S.npPaper10 = true;
+    spawnRealNewspaper(S.pZ + ahead, hw + 2.06);
+  }
+  if (!S.npPaper40 && S.runTime >= 40) {
+    S.npPaper40 = true;
+    spawnRealNewspaper(S.pZ + ahead, hw + 1.72);
+  }
+}
+
+function pathPosLocal(lateral, pathZ, tileBaseZ) {
+  const w = worldXZFromPath(lateral, pathZ);
+  return new THREE.Vector3(w.x, 0, w.z - tileBaseZ);
+}
+/** Y rotation (rad) so local +Z points horizontally from path lateral `fromLat` toward `toLat` at the same path Z (e.g. face the street from the sidewalk). */
+function yawFaceTowardPathLateral(fromLat, pathZ, toLat) {
+  const p0 = worldXZFromPath(fromLat, pathZ);
+  const p1 = worldXZFromPath(toLat, pathZ);
+  return Math.atan2(p1.x - p0.x, p1.z - p0.z);
+}
+function tileCurveStrong(tileBaseZ) {
+  let sum = 0;
+  const n = 12;
+  for (let i = 0; i <= n; i++) {
+    const pz = tileBaseZ + (i / n) * C.TILE_LEN;
+    sum += Math.abs(roadCurveXp(pz));
+  }
+  const mean = sum / (n + 1);
+  return mean > C.ROAD_BUILDING_MEAN_XP;
+}
+
+let sharedGrassRoadMat = null;
+function getGrassRoadMat() {
+  if (!sharedGrassRoadMat) {
+    const gTex = getGrassTexture();
+    gTex.repeat.set(2.8, C.TILE_LEN / 5);
+    sharedGrassRoadMat = new THREE.MeshStandardMaterial({
+      map: gTex,
+      roughness: 0.94,
+      metalness: 0.02,
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+    });
+  }
+  return sharedGrassRoadMat;
+}
+
+let sharedAiNeonGridRoadMat = null;
+let aiNeonGridTexRequested = false;
+function getAiNeonGridRoadMat() {
+  if (!sharedAiNeonGridRoadMat) {
+    sharedAiNeonGridRoadMat = new THREE.MeshBasicMaterial({
+      color: 0x8fdfff,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+    });
+  }
+  if (!aiNeonGridTexRequested) {
+    aiNeonGridTexRequested = true;
+    new THREE.TextureLoader().load(
+      assetUrl('assets/images/grid_twocolors.png'),
+      (tex) => {
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(7.4, C.TILE_LEN / 4.8);
+        tex.anisotropy = renderer.capabilities.getMaxAnisotropy?.() || 1;
+        sharedAiNeonGridRoadMat.map = tex;
+        sharedAiNeonGridRoadMat.needsUpdate = true;
+      },
+      undefined,
+      (err) => console.warn('AI neon grid texture failed to load:', err),
+    );
+  }
+  return sharedAiNeonGridRoadMat;
+}
+
+function buildRibbon(lat0, lat1, tileBaseZ, y, material, layer, flipU = false, enableBloomLayer = false) {
+  const seg = C.ROAD_RIBBON_SEG;
+  const verts = [];
+  const uvs = [];
+  const indices = [];
+  const dz = C.TILE_LEN / seg;
+  const uA = flipU ? 1 : 0;
+  const uB = flipU ? 0 : 1;
+  for (let i = 0; i <= seg; i++) {
+    const lz = i * dz;
+    const pathZ = tileBaseZ + lz;
+    const p0 = pathPosLocal(lat0, pathZ, tileBaseZ);
+    const p1 = pathPosLocal(lat1, pathZ, tileBaseZ);
+    verts.push(p0.x, y, p0.z, p1.x, y, p1.z);
+    const v = (i / seg) * (C.TILE_LEN / 5);
+    uvs.push(uA, v, uB, v);
+  }
+  for (let i = 0; i < seg; i++) {
+    const a = i * 2;
+    // Winding for upward-facing normals (+Y) on ribbon strips (lat0 → lat1, +Z forward).
+    indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, material);
+  // Real-side ribbons + grass read almost black when sun + AI key lights stack shadows on them.
+  mesh.receiveShadow = layer !== L_REAL;
+  mesh.layers.set(layer);
+  if (enableBloomLayer) mesh.layers.enable(L_BLOOM);
+  mesh.userData.roadContent = true;
+  return mesh;
+}
+
+function disposeRoadContent(tile) {
+  for (let i = tile.children.length - 1; i >= 0; i--) {
+    const ch = tile.children[i];
+    if (!ch.userData.roadContent) continue;
+    ch.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+    });
+    tile.remove(ch);
+  }
+}
+
+const ROAD_WIGGLE_AMP = 0.048;
+const ROAD_WIGGLE_PERIODS = 2;
+function roadWiggleX(pathZ) {
+  return ROAD_WIGGLE_AMP * Math.sin((ROAD_WIGGLE_PERIODS * 2 * Math.PI * pathZ) / C.TILE_LEN);
+}
+
+function addLineSegStrip(tile, tileBaseZ, latFn, y, color, layer, bothLayers = false, polyOffset = false) {
+  const n = C.ROAD_RIBBON_SEG * 2;
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const lz = (i / n) * C.TILE_LEN;
+    const pathZ = tileBaseZ + lz;
+    const lat = latFn(pathZ);
+    const p = pathPosLocal(lat, pathZ, tileBaseZ);
+    pts.push(new THREE.Vector3(p.x, y, p.z));
+  }
+  const g = new THREE.BufferGeometry().setFromPoints(pts);
+  const ln = new THREE.Line(g, new THREE.LineBasicMaterial({
+    color,
+    polygonOffset: polyOffset,
+    polygonOffsetFactor: polyOffset ? -1 : 0,
+    polygonOffsetUnits: polyOffset ? -4 : 0,
+  }));
+  if (bothLayers) {
+    ln.layers.enable(L_AI);
+    ln.layers.enable(L_REAL);
+  } else ln.layers.set(layer);
+  if (layer === L_AI && color === COL.CYAN) {
+    ln.layers.enable(L_BLOOM);
+    ln.material.color.multiplyScalar(1.08);
+  }
+  ln.userData.roadContent = true;
+  tile.add(ln);
+}
+
+function addDashedAlongCurve(tile, tileBaseZ, baseLat, y, color, layer) {
+  const pts = [];
+  const dzSeg = 0.22;
+  for (let zz = 0.5; zz < C.TILE_LEN; zz += 2.4) {
+    const zEnd = Math.min(zz + 1.35, C.TILE_LEN);
+    for (let lz = zz; lz < zEnd - 1e-4; lz += dzSeg) {
+      const lzA = lz;
+      const lzB = Math.min(lz + dzSeg, zEnd);
+      const pzA = tileBaseZ + lzA;
+      const pzB = tileBaseZ + lzB;
+      // Lateral wiggle on AI neon dashes caused a crawling line vs the transparent ribbon; keep wiggle on REAL only.
+      const latA = baseLat + (layer === L_AI ? 0 : roadWiggleX(pzA));
+      const latB = baseLat + (layer === L_AI ? 0 : roadWiggleX(pzB));
+      const a = pathPosLocal(latA, pzA, tileBaseZ);
+      const b = pathPosLocal(latB, pzB, tileBaseZ);
+      pts.push(new THREE.Vector3(a.x, y, a.z), new THREE.Vector3(b.x, y, b.z));
+    }
+  }
+  if (pts.length === 0) return;
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.88 });
+  if (layer === L_AI) {
+    mat.color.setHex(0xb4fbff);
+    mat.opacity = 0.94;
+  }
+  const ln = new THREE.LineSegments(geo, mat);
+  ln.layers.set(layer);
+  if (layer === L_AI) ln.layers.enable(L_BLOOM);
+  ln.userData.roadContent = true;
+  tile.add(ln);
+}
+
+function addCenterDivider(tile, tileBaseZ) {
+  const pts = [];
+  const steps = 8;
+  for (let zz = 0; zz < C.TILE_LEN; zz += 2) {
+    const zEnd = Math.min(zz + 1.2, C.TILE_LEN);
+    for (let s = 0; s < steps; s++) {
+      const t0 = zz + (s / steps) * (zEnd - zz);
+      const t1 = zz + ((s + 1) / steps) * (zEnd - zz);
+      const pz0 = tileBaseZ + t0;
+      const pz1 = tileBaseZ + t1;
+      const a = pathPosLocal(0, pz0, tileBaseZ);
+      const b = pathPosLocal(0, pz1, tileBaseZ);
+      pts.push(new THREE.Vector3(a.x, 0.008, a.z), new THREE.Vector3(b.x, 0.008, b.z));
+    }
+  }
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const ln = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xFFD166 }));
+  ln.layers.enable(L_AI);
+  ln.layers.enable(L_REAL);
+  ln.userData.roadContent = true;
+  tile.add(ln);
+}
+
+function populateTile(tile, tileBaseZ) {
+  disposeRoadContent(tile);
+  const oldEnv = tile.userData.envGroup;
+  if (oldEnv) {
+    tile.remove(oldEnv);
+    tile.userData.envGroup = null;
+  }
+  const oldAiEnv = tile.userData.aiEnvGroup;
+  if (oldAiEnv) {
+    tile.remove(oldAiEnv);
+    tile.userData.aiEnvGroup = null;
+  }
+
+  const hw = C.ROAD_W / 2;
+
+  // Mirror REAL grass composition with an emissive AI neon grid shoulder.
+  tile.add(buildRibbon(-hw - C.REAL_GRASS_DEPTH, -hw, tileBaseZ, C.REAL_GROUND_Y, getAiNeonGridRoadMat(), L_AI, false, true));
+  // Keep base AI asphalt out of bloom (same albedo as REAL lanes; dashed lines carry neon accent).
+  tile.add(buildRibbon(-hw, 0, tileBaseZ, 0, sharedLeftRoadMat, L_AI, false, false));
+  tile.add(buildRibbon(0, hw, tileBaseZ, 0, sharedRightRoadMat, L_REAL, false));
+  // Fill split seam with solid lane material so no background leaks through.
+  tile.add(buildRibbon(-0.3, 0.3, tileBaseZ, 0.002, sharedLeftRoadMat, L_AVATAR, false, false));
+  tile.add(buildRibbon(hw, hw + C.REAL_GRASS_DEPTH, tileBaseZ, C.REAL_GROUND_Y, getGrassRoadMat(), L_REAL, false));
+
+  addCenterDivider(tile, tileBaseZ);
+  addDashedAlongCurve(tile, tileBaseZ, -2, 0.009, 0xa8e8ff, L_AI);
+  addDashedAlongCurve(tile, tileBaseZ, -1, 0.009, 0xa8e8ff, L_AI);
+  addDashedAlongCurve(tile, tileBaseZ, 1, 0.009, 0xffffff, L_REAL);
+  addDashedAlongCurve(tile, tileBaseZ, 2, 0.009, 0xffffff, L_REAL);
+
+  const kerbH = 0.068;
+  const kerbL = 1.15;
+  const kerbW = 0.11;
+  for (let zz = kerbL * 0.5; zz < C.TILE_LEN; zz += kerbL) {
+    const pathZ = tileBaseZ + zz;
+    const yaw = roadYawAtZ(pathZ);
+    const white = Math.floor(zz / kerbL) % 2 === 0;
+    const mat = new THREE.MeshBasicMaterial({ color: white ? 0xeeeeee : 0xc9182a });
+    for (const side of [-1, 1]) {
+      const lat = side < 0 ? -hw + kerbW * 0.5 : hw - kerbW * 0.5;
+      const w = worldXZFromPath(lat, pathZ);
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(kerbW, kerbH, kerbL * 0.9), mat);
+      mesh.position.set(w.x, kerbH * 0.5 + 0.003, w.z - tileBaseZ);
+      mesh.rotation.y = yaw;
+      mesh.layers.set(side < 0 ? L_AI : L_REAL);
+      if (side < 0) mesh.layers.enable(L_BLOOM);
+      mesh.userData.roadContent = true;
+      tile.add(mesh);
+    }
+  }
+
+  const seamA = pathPosLocal(-hw, tileBaseZ + 0.04, tileBaseZ);
+  const seamB = pathPosLocal(hw, tileBaseZ + 0.04, tileBaseZ);
+  const seamGeo = new THREE.BufferGeometry().setFromPoints([
+    new THREE.Vector3(seamA.x, 0.007, seamA.z),
+    new THREE.Vector3(seamB.x, 0.007, seamB.z),
+  ]);
+  const seamLn = new THREE.Line(seamGeo, new THREE.LineBasicMaterial({ color: 0x1a1a24, transparent: true, opacity: 0.9 }));
+  seamLn.layers.enable(L_AI);
+  seamLn.layers.enable(L_REAL);
+  seamLn.userData.roadContent = true;
+  tile.add(seamLn);
+
+  addLineSegStrip(tile, tileBaseZ, () => -hw, 0.026, COL.CYAN, L_AI, false, true);
+  addLineSegStrip(tile, tileBaseZ, () => hw, 0.008, 0xffffff, L_REAL);
+
+  if (!tileCurveStrong(tileBaseZ)) addBuildings(tile, tileBaseZ);
+  addRealEnvGroup(tile);
+  addAiEnvGroup(tile);
+}
+
+let grassTextureShared = null;
+function getGrassTexture() {
+  if (grassTextureShared) return grassTextureShared;
+  const cv = document.createElement('canvas');
+  cv.width = 256; cv.height = 256;
+  const x = cv.getContext('2d');
+  x.fillStyle = '#4b7f44';
+  x.fillRect(0, 0, cv.width, cv.height);
+
+  // Subtle vertical light falloff to avoid flat carpet look.
+  const grad = x.createLinearGradient(0, 0, 0, cv.height);
+  grad.addColorStop(0, 'rgba(170,210,150,0.12)');
+  grad.addColorStop(0.45, 'rgba(0,0,0,0.00)');
+  grad.addColorStop(1, 'rgba(0,0,0,0.14)');
+  x.fillStyle = grad;
+  x.fillRect(0, 0, cv.width, cv.height);
+
+  // Broad patches of slightly different tones.
+  for (let i = 0; i < 520; i++) {
+    const px = Math.random() * cv.width;
+    const py = Math.random() * cv.height;
+    const r = 8 + Math.random() * 20;
+    const rr = 55 + Math.floor(Math.random() * 25);
+    const gg = 100 + Math.floor(Math.random() * 60);
+    const bb = 40 + Math.floor(Math.random() * 20);
+    x.fillStyle = `rgba(${rr},${gg},${bb},${0.06 + Math.random() * 0.1})`;
+    x.beginPath();
+    x.ellipse(px, py, r, r * (0.55 + Math.random() * 0.65), Math.random() * Math.PI, 0, Math.PI * 2);
+    x.fill();
+  }
+
+  // Fine blade-like speckles.
+  for (let i = 0; i < 9000; i++) {
+    const px = Math.random() * cv.width;
+    const py = Math.random() * cv.height;
+    const h = 1 + Math.random() * 2.6;
+    const w = 0.5 + Math.random() * 1.3;
+    const g = 85 + Math.floor(Math.random() * 90);
+    const r = 22 + Math.floor(Math.random() * 22);
+    const b = 20 + Math.floor(Math.random() * 22);
+    x.fillStyle = `rgba(${r},${g},${b},${0.22 + Math.random() * 0.3})`;
+    x.fillRect(px, py, w, h);
+  }
+
+  // Tiny darker grains for depth.
+  for (let i = 0; i < 4000; i++) {
+    const px = Math.random() * cv.width;
+    const py = Math.random() * cv.height;
+    const d = 20 + Math.floor(Math.random() * 24);
+    x.fillStyle = `rgba(${d},${d + 18},${d - 4},${0.16 + Math.random() * 0.16})`;
+    x.fillRect(px, py, 1, 1);
+  }
+  grassTextureShared = new THREE.CanvasTexture(cv);
+  grassTextureShared.wrapS = grassTextureShared.wrapT = THREE.RepeatWrapping;
+  grassTextureShared.colorSpace = THREE.SRGBColorSpace;
+  grassTextureShared.minFilter = THREE.LinearMipmapLinearFilter;
+  grassTextureShared.magFilter = THREE.LinearFilter;
+  grassTextureShared.generateMipmaps = true;
+  return grassTextureShared;
+}
+
+/** Wireframe box used on the neon shoulder (`mkBuilding`) and chain links along the shoulder. */
+function mkNeonWireBoxLineSegments(w, h, d, color) {
+  const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, d));
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color }));
+  line.position.y = h / 2;
+  return line;
+}
+
+function mkBuilding(w, h, d, color) {
+  const group = new THREE.Group();
+  group.add(mkNeonWireBoxLineSegments(w, h, d, color));
+  group.userData.neonWireH = h;
+  // LineSegments do not cast shadows; a thin footprint reads as ground contact on the neon strip.
+  const proxyMat = new THREE.MeshBasicMaterial({
+    color: 0x020408,
+    transparent: true,
+    opacity: 0.26,
+    depthWrite: false,
+  });
+  installWorldSplitOnMaterial(proxyMat);
+  const proxy = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, h * 0.94, d * 0.92), proxyMat);
+  proxy.position.y = h / 2;
+  proxy.castShadow = true;
+  proxy.receiveShadow = false;
+  group.add(proxy);
+  return group;
+}
+
+/** Cyan segment through neon shoulder wire buildings + small same-style cubes at mid-span. */
+function addNeonShoulderChain(tile, buildings) {
+  if (buildings.length < 2) return;
+  const root = new THREE.Group();
+  root.userData.roadContent = true;
+  const sorted = buildings.slice().sort((a, b) => a.position.z - b.position.z);
+  const pts = sorted.map((b) => {
+    const hh = (b.userData.neonWireH ?? 3) * 0.5;
+    return new THREE.Vector3(b.position.x, hh, b.position.z);
+  });
+  const geo = new THREE.BufferGeometry().setFromPoints(pts);
+  const lnMat = new THREE.LineBasicMaterial({
+    color: COL.CYAN,
+    transparent: true,
+    opacity: 0.94,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4,
+  });
+  lnMat.color.multiplyScalar(1.08);
+  const ln = new THREE.Line(geo, lnMat);
+  ln.layers.set(L_AI);
+  ln.layers.enable(L_BLOOM);
+  root.add(ln);
+
+  const linkS = 0.26;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const mid = new THREE.Vector3().addVectors(pts[i], pts[i + 1]).multiplyScalar(0.5);
+    const jewel = mkNeonWireBoxLineSegments(linkS, linkS, linkS, COL.CYAN);
+    jewel.position.set(mid.x, mid.y - linkS * 0.5, mid.z);
+    jewel.layers.set(L_AI);
+    jewel.layers.enable(L_BLOOM);
+    root.add(jewel);
+  }
+  tile.add(root);
+}
+
+/** Spawned gate path Z + stable ordinal so shoulder props alternate: even gate = neon wire, odd = outer dark block. */
+const gatePathZAnchors = [];
+let gateSpawnOrdinal = 0;
+
+/** If `pathZ` is near a gate (spawned or `S.nextGate`), returns `{ ord, gateZ }`; else `null`. */
+function nearestGateDecorInfo(pathZ) {
+  const nSlots = 7;
+  const slotSpan = C.TILE_LEN / nSlots;
+  const r = slotSpan * 1.32;
+  let bestD = Infinity;
+  let bestOrd = -1;
+  let bestGateZ = 0;
+  for (const a of gatePathZAnchors) {
+    const d = Math.abs(a.z - pathZ);
+    if (d <= r && d < bestD) {
+      bestD = d;
+      bestOrd = a.ord;
+      bestGateZ = a.z;
+    }
+  }
+  const dn = Math.abs(S.nextGate - pathZ);
+  if (dn <= r && dn < bestD) {
+    bestD = dn;
+    bestOrd = gatePathZAnchors.length;
+    bestGateZ = S.nextGate;
+  }
+  return bestOrd >= 0 ? { ord: bestOrd, gateZ: bestGateZ } : null;
+}
+
+const neonGridBlackBoxH = 4.35;
+const neonGridBlackBoxGeo = new THREE.BoxGeometry(2.45, neonGridBlackBoxH, 2.85);
+const neonGridBlackBoxMat = new THREE.MeshStandardMaterial({
+  color: 0x040406,
+  roughness: 0.96,
+  metalness: 0.04,
+});
+installWorldSplitOnMaterial(neonGridBlackBoxMat);
+
+function addBuildings(tile, tileBaseZ) {
+  const hw = C.ROAD_W / 2;
+  /** Inner path — wireframe blocks stay near the AI lanes / road edge of the neon strip. */
+  const latWireRow = -(hw + C.REAL_GRASS_DEPTH * 0.28);
+  /** Outer path — big dark block sits one band deeper into the grid (toward the far edge), not on the wire row. */
+  const latHoloOuterPath = -(hw + C.REAL_GRASS_DEPTH * 0.84);
+  const placed = [];
+  const nSlots = 7;
+  const flip = Math.floor(tileBaseZ / C.TILE_LEN) % 2;
+  const neonGateOrdDone = new Set();
+  const blackGateOrdDone = new Set();
+  for (let k = 0; k < nSlots; k++) {
+    const lz = ((k + 0.5) / nSlots) * C.TILE_LEN;
+    const pathZ = tileBaseZ + lz;
+    const gateMatch = nearestGateDecorInfo(pathZ);
+    const stripeNeon = ((k + flip) % 2) === 1;
+    const allowStripeBlack = pathZ >= NEON_GRID_BLACK_STRIPE_MINZ;
+
+    const addNeonAt = (pz) => {
+      const b = mkBuilding(1 + Math.random() * 2, 2 + Math.random() * 6, 1 + Math.random() * 2, COL.CYAN);
+      const lat = latWireRow + (Math.random() - 0.5) * 1.4;
+      const w = worldXZFromPath(lat, pz);
+      b.position.set(w.x, 0, w.z - tileBaseZ);
+      b.rotation.y = yawFaceTowardPathLateral(lat, pz, 0);
+      b.layers.set(L_AI);
+      b.layers.enable(L_BLOOM);
+      b.userData.roadContent = true;
+      tile.add(b);
+      placed.push(b);
+    };
+
+    const addBlackAt = (pathZBlk) => {
+      const latH = latHoloOuterPath - NEON_GRID_BLACK_LAT_DEEPEN + NEON_GRID_BLACK_LAT_RIGHT
+        + (Math.random() - 0.5) * 0.55;
+      const w = worldXZFromPath(latH, pathZBlk);
+      const blk = new THREE.Mesh(neonGridBlackBoxGeo, neonGridBlackBoxMat);
+      blk.position.set(
+        w.x,
+        C.REAL_GROUND_Y + neonGridBlackBoxH * 0.5,
+        w.z - tileBaseZ,
+      );
+      blk.rotation.y = yawFaceTowardPathLateral(latH, pathZBlk, 0);
+      blk.rotateY(-C.ENV_BUILDING_YAW_EXTRA * 0.65);
+      blk.castShadow = true;
+      blk.receiveShadow = true;
+      applyWorldLayer(blk, L_AI);
+      blk.userData.roadContent = true;
+      tile.add(blk);
+    };
+
+    if (gateMatch != null && (gateMatch.ord % 2) === 0) {
+      const ownTile = Math.floor(gateMatch.gateZ / C.TILE_LEN) * C.TILE_LEN;
+      if (!neonGateOrdDone.has(gateMatch.ord) && Math.abs(ownTile - tileBaseZ) < 0.02) {
+        neonGateOrdDone.add(gateMatch.ord);
+        addNeonAt(gateMatch.gateZ);
+      }
+    } else if (gateMatch != null && (gateMatch.ord % 2) === 1) {
+      const ownTile = Math.floor(gateMatch.gateZ / C.TILE_LEN) * C.TILE_LEN;
+      if (!blackGateOrdDone.has(gateMatch.ord) && Math.abs(ownTile - tileBaseZ) < 0.02) {
+        blackGateOrdDone.add(gateMatch.ord);
+        addBlackAt(gateMatch.gateZ + NEON_GRID_BLACK_AFTER_GATE);
+      }
+    } else if (stripeNeon) {
+      addNeonAt(pathZ);
+    } else if (allowStripeBlack) {
+      addBlackAt(pathZ + NEON_GRID_BLACK_AHEAD);
+    }
+  }
+  addNeonShoulderChain(tile, placed);
+}
+
+function aiGltfCenterInParent(parentGroup, obj) {
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj);
+  if (box.isEmpty()) return null;
+  const c = box.getCenter(new THREE.Vector3());
+  parentGroup.worldToLocal(c);
+  return c;
+}
+
+/** One cyan span + midpoint wire cube; endpoints in `envGroup` local space. */
+function addAiNeonGltfChainSegment(envGroup, p0, p1, linkS = 0.38) {
+  const a = p0.z <= p1.z ? p0 : p1;
+  const b = p0.z <= p1.z ? p1 : p0;
+  const root = new THREE.Group();
+  const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const lnMat = new THREE.LineBasicMaterial({
+    color: COL.CYAN,
+    transparent: true,
+    opacity: 0.94,
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4,
+  });
+  lnMat.color.multiplyScalar(1.08);
+  const ln = new THREE.Line(geo, lnMat);
+  ln.layers.set(L_AI);
+  ln.layers.enable(L_BLOOM);
+  root.add(ln);
+
+  const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+  const jewel = mkNeonWireBoxLineSegments(linkS, linkS, linkS, COL.CYAN);
+  jewel.position.set(mid.x, mid.y - linkS * 0.5, mid.z);
+  jewel.layers.set(L_AI);
+  jewel.layers.enable(L_BLOOM);
+  root.add(jewel);
+
+  envGroup.add(root);
+}
+
+/** Cyan line + small wire cubes between HQ and spire on the same tile. */
+function addAiNeonGltfChain(envGroup, hqRoot, spireRoot) {
+  if (!hqRoot || !spireRoot) return;
+  envGroup.updateMatrixWorld(true);
+  const ca = aiGltfCenterInParent(envGroup, hqRoot);
+  const cb = aiGltfCenterInParent(envGroup, spireRoot);
+  if (!ca || !cb) return;
+  addAiNeonGltfChainSegment(envGroup, ca, cb);
+}
+
+function findRoadTileAtBaseZ(baseZ) {
+  for (const t of roadTiles) {
+    if (Math.abs(t.position.z - baseZ) < 0.02) return t;
+  }
+  return null;
+}
+
+/** Continue the chain onto the next tile: previous spire → this tile's HQ (stored in previous env group). */
+function addAiNeonGltfBridgeFromPrevTile(prevTile, curHqRoot) {
+  if (!prevTile || !curHqRoot) return;
+  const prevEg = prevTile.userData.aiEnvGroup;
+  const prevSpire = prevTile.userData.aiNeonSpireRoot;
+  if (!prevEg || !prevSpire) return;
+  prevEg.updateMatrixWorld(true);
+  const a = aiGltfCenterInParent(prevEg, prevSpire);
+  if (!a) return;
+  const bw = new THREE.Vector3();
+  curHqRoot.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(curHqRoot);
+  if (box.isEmpty()) return;
+  box.getCenter(bw);
+  prevEg.worldToLocal(bw);
+  addAiNeonGltfChainSegment(prevEg, a, bw);
+}
+
+function initRoad() {
+  for (let i = 0; i < C.TILE_N; i++) {
+    const t = new THREE.Group();
+    t.position.z = i * C.TILE_LEN;
+    scene.add(t);
+    roadTiles.push(t);
+    populateTile(t, t.position.z);
+  }
+}
+
+function recycleRoad() {
+  for (const t of roadTiles) {
+    if (t.position.z + C.TILE_LEN < S.pZ - C.GATE_BEHIND) {
+      let mx = -Infinity;
+      for (const tt of roadTiles) if (tt.position.z > mx) mx = tt.position.z;
+      t.position.z = mx + C.TILE_LEN;
+      populateTile(t, t.position.z);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// WORLD ENVIRONMENTS
+// ═══════════════════════════════════════════════════════
+
+// Vertical split at x = 0: night sky (AI) vs day sky (Real), each on its own layer + light set.
+const clipLeft = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0);
+const clipRight = new THREE.Plane(new THREE.Vector3(1, 0, 0), 0);
+
+// Large backdrop quads (world-fixed). Procedural Canvas2D textures — reliable with MeshBasicMaterial + clipping (custom ShaderMaterial + WebGL2 was not drawing).
+const SKY_W = 320;
+const SKY_H = 220;
+
+function createAiSkyCanvasTexture() {
+  const w = 1024;
+  const h = 512;
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const g = cv.getContext('2d');
+  const grad = g.createLinearGradient(0, h, 0, 0);
+  grad.addColorStop(0, '#020208');
+  grad.addColorStop(0.3, '#0a0635');
+  grad.addColorStop(0.55, '#18084a');
+  grad.addColorStop(0.78, '#102060');
+  grad.addColorStop(1, '#081838');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 14; i++) {
+    const cx = Math.random() * w;
+    const cy = Math.random() * h * 0.75;
+    const r = 40 + Math.random() * 160;
+    const rg = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+    const a = 0.08 + Math.random() * 0.12;
+    rg.addColorStop(0, `rgba(${80 + Math.random() * 80},30,${120 + Math.random() * 100},${a})`);
+    rg.addColorStop(0.5, `rgba(40,20,90,${a * 0.4})`);
+    rg.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, w, h);
+  }
+  for (let i = 0; i < 4200; i++) {
+    const px = Math.random() * w;
+    const py = Math.random() * h * 0.88;
+    const s = Math.random() < 0.92 ? Math.random() * 1.4 : 1.5 + Math.random() * 2;
+    const br = 0.25 + Math.random() * 0.75;
+    g.fillStyle = `rgba(210,230,255,${br})`;
+    g.fillRect(px, py, s, s);
+  }
+  g.strokeStyle = 'rgba(0,255,255,0.04)';
+  g.lineWidth = 1;
+  for (let i = 0; i < 28; i++) {
+    g.beginPath();
+    g.moveTo(Math.random() * w, Math.random() * h * 0.5);
+    g.lineTo(Math.random() * w, Math.random() * h * 0.5);
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.generateMipmaps = true;
+  return tex;
+}
+
+let aiSkyPlane = null;
+/** Deeper parallax layer (same textures, drawn first = behind). */
+let aiSkyPlaneFar = null;
+let realSkyDome = null;
+let realCloudVolume = null;
+
+/** 3D depth props: gas-giant planet (AI) + volumetric-style sun (REAL). */
+let aiPlanet = null;
+let aiPlanetBaseY = 52;
+let realSun = null;
+let lastRealSunInFront = null;
+
+/** AI sky VFX: shooting streaks + twinkling points (depth-tested where useful). */
+let aiShootingStars = [];
+let aiTwinkleMeshes = [];
+
+function createPlanetGasTexture() {
+  const w = 512;
+  const h = 256;
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const g = cv.getContext('2d');
+  for (let row = 0; row < h; row++) {
+    const t = row / h;
+    const wave = Math.sin(t * 18.0) * 0.5 + 0.5;
+    const r = Math.floor(35 + wave * 55 + Math.sin(t * 31) * 20);
+    const gg = Math.floor(25 + wave * 40 + Math.cos(t * 22) * 25);
+    const b = Math.floor(90 + wave * 80 + Math.sin(t * 14 + 1) * 35);
+    g.fillStyle = `rgb(${r},${gg},${b})`;
+    g.fillRect(0, row, w, 1);
+  }
+  const rg = g.createRadialGradient(w * 0.42, h * 0.35, 4, w * 0.42, h * 0.35, h * 0.55);
+  rg.addColorStop(0, 'rgba(200,220,255,0.35)');
+  rg.addColorStop(0.4, 'rgba(80,40,120,0.08)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = rg;
+  g.fillRect(0, 0, w, h);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  return tex;
+}
+
+function buildSkyDepthProps() {
+  const clipMat = (planes, col, opts = {}) => new THREE.MeshBasicMaterial({
+    color: col,
+    transparent: opts.transparent ?? false,
+    opacity: opts.opacity ?? 1,
+    blending: opts.blending ?? THREE.NormalBlending,
+    depthTest: opts.depthTest ?? true,
+    depthWrite: opts.depthWrite ?? false,
+    fog: false,
+    toneMapped: false,
+    clipping: true,
+    clipIntersection: false,
+    clippingPlanes: planes,
+    ...opts,
+  });
+
+  const pTex = createPlanetGasTexture();
+  aiPlanet = new THREE.Mesh(
+    new THREE.SphereGeometry(14, 40, 28),
+    new THREE.MeshBasicMaterial({
+      map: pTex,
+      depthTest: true,
+      depthWrite: true,
+      fog: false,
+      toneMapped: false,
+      clipping: true,
+      clipIntersection: false,
+      clippingPlanes: [clipLeft],
+    })
+  );
+  aiPlanet.renderOrder = -2;
+  aiPlanet.frustumCulled = false;
+  aiPlanet.layers.set(L_AI);
+  aiPlanet.position.set(-128, aiPlanetBaseY, 88);
+  scene.add(aiPlanet);
+
+  realSun = new THREE.Group();
+  const mkBall = (r, mat, ro = -2) => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 28, 24), mat);
+    m.frustumCulled = false;
+    m.renderOrder = ro;
+    return m;
+  };
+  const sunBehindAdd = { depthTest: true, depthWrite: false };
+  const sunOut = mkBall(28, clipMat([clipRight], 0xff9933, { transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending, ...sunBehindAdd }));
+  sunOut.userData.sunOpBase = 0.2;
+  realSun.add(sunOut);
+  const sunMid = mkBall(17, clipMat([clipRight], 0xffdd99, { transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending, ...sunBehindAdd }));
+  sunMid.userData.sunOpBase = 0.42;
+  realSun.add(sunMid);
+  const sunCore = mkBall(9, clipMat([clipRight], 0xfffcee, { depthTest: true, depthWrite: true }));
+  sunCore.userData.sunColBase = new THREE.Color(0xfffcee);
+  realSun.add(sunCore);
+  realSun.position.set(132, 58, 90);
+  applyWorldLayer(realSun, L_REAL);
+  scene.add(realSun);
+
+  buildAiSkyVfx();
+}
+
+function createShootingStarTexture() {
+  const cv = document.createElement('canvas');
+  const W = 96;
+  const H = 10;
+  cv.width = W;
+  cv.height = H;
+  const g = cv.getContext('2d');
+  const cy = H / 2;
+  const gr = g.createLinearGradient(0, cy, W, cy);
+  gr.addColorStop(0, 'rgba(255,255,255,0)');
+  gr.addColorStop(0.12, 'rgba(200,230,255,0.25)');
+  gr.addColorStop(0.45, 'rgba(255,255,255,0.72)');
+  gr.addColorStop(0.58, 'rgba(220,245,255,0.5)');
+  gr.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = gr;
+  g.fillRect(0, 0, W, H);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearFilter;
+  return tex;
+}
+
+function buildAiSkyVfx() {
+  const streakTex = createShootingStarTexture();
+  const mkStreakMat = () => new THREE.MeshBasicMaterial({
+    map: streakTex,
+    transparent: true,
+    opacity: 0.78,
+    blending: THREE.AdditiveBlending,
+    depthTest: true,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+    side: THREE.DoubleSide,
+    clipping: true,
+    clipIntersection: false,
+    clippingPlanes: [clipLeft],
+  });
+  for (let i = 0; i < 6; i++) {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(7.5, 0.18), mkStreakMat());
+    mesh.frustumCulled = false;
+    mesh.renderOrder = -1;
+    mesh.layers.set(L_AI);
+    mesh.userData.vel = new THREE.Vector3();
+    mesh.userData.t = 0;
+    mesh.userData.dur = 1.1 + Math.random() * 0.7;
+    mesh.userData.delay = i * 0.75 + Math.random() * 1.8;
+    mesh.visible = false;
+    scene.add(mesh);
+    aiShootingStars.push(mesh);
+  }
+
+  for (let i = 0; i < 18; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xccffff,
+      transparent: true,
+      opacity: 0.55,
+      blending: THREE.AdditiveBlending,
+      depthTest: true,
+      depthWrite: false,
+      fog: false,
+      toneMapped: false,
+      clipping: true,
+      clipIntersection: false,
+      clippingPlanes: [clipLeft],
+    });
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.22 + Math.random() * 0.35, 8, 8), mat);
+    m.frustumCulled = false;
+    m.renderOrder = -1;
+    m.layers.set(L_AI);
+    m.userData.phase = Math.random() * Math.PI * 2;
+    m.userData.rate = 1.8 + Math.random() * 2.5;
+    m.userData.baseOp = 0.12 + Math.random() * 0.35;
+    scene.add(m);
+    aiTwinkleMeshes.push(m);
+  }
+}
+
+function resetShootingStar(mesh, zBase) {
+  mesh.position.set(
+    -45 - Math.random() * 75,
+    32 + Math.random() * 26,
+    zBase + 15 + Math.random() * 45
+  );
+  const dir = new THREE.Vector3(
+    0.35 + Math.random() * 0.45,
+    -0.15 - Math.random() * 0.35,
+    -0.75 - Math.random() * 0.25
+  ).normalize();
+  mesh.userData.vel.copy(dir).multiplyScalar(34 + Math.random() * 26);
+  mesh.userData.t = 0;
+  mesh.userData.dur = 0.85 + Math.random() * 0.9;
+  const aim = mesh.position.clone().add(dir.clone().multiplyScalar(40));
+  mesh.lookAt(aim);
+  mesh.visible = true;
+}
+
+function buildRealSkyFromExample() {
+  // Adapted from three.js webgl_shaders_sky example.
+  const sky = new Sky();
+  sky.scale.setScalar(4000);
+  const u = sky.material.uniforms;
+  u.turbidity.value = 8;
+  u.rayleigh.value = 1.65;
+  u.mieCoefficient.value = 0.004;
+  u.mieDirectionalG.value = 0.82;
+
+  const sun = new THREE.Vector3();
+  const elevation = THREE.MathUtils.degToRad(22);
+  const azimuth = THREE.MathUtils.degToRad(165);
+  sun.setFromSphericalCoords(1, Math.PI / 2 - elevation, azimuth);
+  u.sunPosition.value.copy(sun);
+
+  sky.material.clipping = true;
+  sky.material.clippingPlanes = [clipRight];
+  sky.material.clipIntersection = false;
+  sky.material.depthWrite = false;
+  sky.material.fog = false;
+  sky.material.toneMapped = true;
+  sky.renderOrder = -5;
+  sky.frustumCulled = false;
+  applyWorldLayer(sky, L_REAL);
+  scene.add(sky);
+  realSkyDome = sky;
+}
+
+function buildRealCloudVolumeFromExample() {
+  // Adapted from three.js webgl_volume_cloud example.
+  const size = 48;
+  const data = new Uint8Array(size * size * size);
+  let ptr = 0;
+  const center = size * 0.5;
+  for (let z = 0; z < size; z++) {
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const nx = (x - center) / center;
+        const ny = (y - center) / center;
+        const nz = (z - center) / center;
+        const falloff = Math.max(0, 1 - Math.sqrt(nx * nx + ny * ny * 1.35 + nz * nz));
+        const noise =
+          0.5 + 0.5 * Math.sin(x * 0.31 + z * 0.29)
+          + 0.35 * Math.sin(y * 0.53 + x * 0.17)
+          + 0.25 * Math.sin((x + y + z) * 0.11);
+        const density = THREE.MathUtils.clamp(falloff * (noise / 2.1), 0, 1);
+        data[ptr++] = Math.floor(density * 255);
+      }
+    }
+  }
+  const tex = new THREE.Data3DTexture(data, size, size, size);
+  tex.format = THREE.RedFormat;
+  tex.type = THREE.UnsignedByteType;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.unpackAlignment = 1;
+  tex.needsUpdate = true;
+
+  const material = new THREE.RawShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    transparent: true,
+    side: THREE.BackSide,
+    depthWrite: false,
+    uniforms: {
+      map: { value: tex },
+      cameraPos: { value: new THREE.Vector3() },
+      threshold: { value: 0.24 },
+      opacity: { value: 0.4 },
+      range: { value: 0.14 },
+      steps: { value: 82 },
+      jitter: { value: 0.18 },
+      brightness: { value: 1.05 },
+    },
+    vertexShader: `
+      in vec3 position;
+      uniform mat4 modelMatrix;
+      uniform mat4 modelViewMatrix;
+      uniform mat4 projectionMatrix;
+      uniform vec3 cameraPos;
+      out vec3 vOrigin;
+      out vec3 vDirection;
+      void main() {
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        vOrigin = (inverse(modelMatrix) * vec4(cameraPos, 1.0)).xyz;
+        vDirection = position - vOrigin;
+        gl_Position = projectionMatrix * mvPosition;
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      precision highp sampler3D;
+      in vec3 vOrigin;
+      in vec3 vDirection;
+      out vec4 color;
+      uniform sampler3D map;
+      uniform float threshold;
+      uniform float opacity;
+      uniform float range;
+      uniform float steps;
+      uniform float jitter;
+      uniform float brightness;
+      vec2 hitBox(vec3 orig, vec3 dir) {
+        const vec3 boxMin = vec3(-0.5);
+        const vec3 boxMax = vec3(0.5);
+        vec3 invDir = 1.0 / dir;
+        vec3 tminTmp = (boxMin - orig) * invDir;
+        vec3 tmaxTmp = (boxMax - orig) * invDir;
+        vec3 tmin = min(tminTmp, tmaxTmp);
+        vec3 tmax = max(tminTmp, tmaxTmp);
+        float t0 = max(tmin.x, max(tmin.y, tmin.z));
+        float t1 = min(tmax.x, min(tmax.y, tmax.z));
+        return vec2(t0, t1);
+      }
+      float sampleCloud(vec3 p) {
+        return texture(map, p + 0.5).r;
+      }
+      void main() {
+        vec3 rayDir = normalize(vDirection);
+        vec2 bounds = hitBox(vOrigin, rayDir);
+        if (bounds.x > bounds.y) discard;
+        bounds.x = max(bounds.x, 0.0);
+        vec3 p = vOrigin + bounds.x * rayDir;
+        vec3 inc = 1.0 / abs(rayDir);
+        float delta = min(inc.x, min(inc.y, inc.z)) / steps;
+        delta = max(delta, 0.0035);
+        float seed = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898, 78.233))) * 43758.5453);
+        p += rayDir * seed * delta * jitter;
+        float accum = 0.0;
+        for (float t = bounds.x; t < bounds.y; t += delta) {
+          float d = smoothstep(threshold - range, threshold + range, sampleCloud(p));
+          accum += d * opacity * (1.0 - accum);
+          if (accum >= 0.97) break;
+          p += rayDir * delta;
+        }
+        if (accum <= 0.01) discard;
+        vec3 cloudCol = vec3(1.0, 1.0, 0.98) * brightness;
+        color = vec4(cloudCol, accum);
+      }
+    `,
+    clipping: true,
+    clipIntersection: false,
+    clippingPlanes: [clipRight],
+  });
+
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), material);
+  mesh.scale.set(160, 34, 120);
+  mesh.position.set(96, 36, 120);
+  mesh.renderOrder = -1;
+  mesh.frustumCulled = false;
+  applyWorldLayer(mesh, L_REAL);
+  scene.add(mesh);
+  realCloudVolume = mesh;
+}
+
+function buildCanvasSkies() {
+  const texAi = createAiSkyCanvasTexture();
+
+  const mk = (tex, layer, clip, colorHex, orderZ, depthTest = false) => {
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      color: new THREE.Color(colorHex),
+      depthTest,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      fog: false,
+      clipping: true,
+      clipIntersection: false,
+      clippingPlanes: [clip],
+      toneMapped: false,
+    });
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(SKY_W, SKY_H), mat);
+    mesh.renderOrder = orderZ;
+    mesh.frustumCulled = false;
+    mesh.layers.set(layer);
+    return mesh;
+  };
+
+  aiSkyPlaneFar = mk(texAi, L_AI, clipLeft, 0x6688cc, -4, true);
+  aiSkyPlane = mk(texAi, L_AI, clipLeft, 0xaabbff, -3, true);
+
+  const back = 38;
+  const fore = 28;
+  aiSkyPlaneFar.position.set(-110, back, 88);
+  aiSkyPlaneFar.scale.setScalar(1.12);
+  aiSkyPlane.position.set(-110, fore, 88);
+
+  scene.add(aiSkyPlaneFar);
+  scene.add(aiSkyPlane);
+  buildRealSkyFromExample();
+  buildRealCloudVolumeFromExample();
+
+  if (DEBUG_SKY) {
+    const mark = (x, col, layer) => {
+      const m = new THREE.Mesh(
+        new THREE.SphereGeometry(6, 10, 8),
+        new THREE.MeshBasicMaterial({ color: col, wireframe: true, depthTest: false })
+      );
+      m.layers.set(layer);
+      m.position.set(x, 35, 88);
+      scene.add(m);
+    };
+    mark(-110, 0x00ffff, L_AI);
+    mark(110, 0xff00ff, L_REAL);
+    console.info('[AI Race] debugSky=1: AI sky = Canvas2D, REAL sky = Sky + volume cloud.');
+  }
+
+  buildSkyDepthProps();
+}
+
+buildCanvasSkies();
+
+function makeProceduralAsphaltRoadTexture() {
+  const w = 512;
+  const h = 512;
+  const cv = document.createElement('canvas');
+  cv.width = w;
+  cv.height = h;
+  const g = cv.getContext('2d');
+  g.fillStyle = '#3a3834';
+  g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 9000; i++) {
+    const px = Math.random() * w;
+    const py = Math.random() * h;
+    const v = 18 + Math.floor(Math.random() * 40);
+    g.fillStyle = `rgba(${v},${v - 4},${v - 8},${0.04 + Math.random() * 0.07})`;
+    g.fillRect(px, py, 1.2, 1.2);
+  }
+  g.strokeStyle = 'rgba(210,205,198,0.06)';
+  g.lineWidth = 1;
+  for (let k = 0; k < 28; k++) {
+    const y = (k / 28) * h;
+    g.beginPath();
+    g.moveTo(0, y);
+    g.lineTo(w, y + (Math.random() - 0.5) * 3);
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(cv);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+function applyRealRoadColorMap(tex) {
+  const aniso = renderer.capabilities.getMaxAnisotropy?.() || 1;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, C.TILE_LEN / 5);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = aniso;
+  tex.needsUpdate = true;
+  for (const m of rightRoadMaterials) {
+    m.map = tex;
+    m.color.setHex(0xffffff);
+    m.emissiveMap = null;
+    m.emissive.setHex(0x000000);
+    m.emissiveIntensity = 0;
+    m.transparent = false;
+    m.opacity = 1;
+    m.depthWrite = true;
+    m.depthTest = true;
+    m.fog = true;
+    m.needsUpdate = true;
+  }
+}
+
+/** AI / neon lanes: road2.jpg (denser repeat so panel detail stays readable). */
+function applyNeonLaneRoadColorMap(tex) {
+  const aniso = renderer.capabilities.getMaxAnisotropy?.() || 1;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1.55, C.TILE_LEN / 3.6);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = aniso;
+  tex.needsUpdate = true;
+  sharedLeftRoadMat.map = tex;
+  sharedLeftRoadMat.color.setHex(0xffffff);
+  sharedLeftRoadMat.emissiveMap = null;
+  sharedLeftRoadMat.emissive.setHex(0x000000);
+  sharedLeftRoadMat.emissiveIntensity = 0;
+  sharedLeftRoadMat.transparent = false;
+  sharedLeftRoadMat.opacity = 1;
+  sharedLeftRoadMat.depthWrite = true;
+  sharedLeftRoadMat.depthTest = true;
+  sharedLeftRoadMat.fog = true;
+  sharedLeftRoadMat.needsUpdate = true;
+}
+
+const roadTexLoader = new THREE.TextureLoader();
+roadTexLoader.load(
+  assetUrl('assets/images/road.jpg'),
+  tex => applyRealRoadColorMap(tex),
+  undefined,
+  () => applyRealRoadColorMap(makeProceduralAsphaltRoadTexture()),
+);
+
+roadTexLoader.load(
+  assetUrl('assets/images/road2.jpg'),
+  tex => applyNeonLaneRoadColorMap(tex),
+  undefined,
+  () => applyNeonLaneRoadColorMap(makeProceduralAsphaltRoadTexture()),
+);
+
+/** Real-side sun: in front of buildings on REAL lanes (3–5), behind when on AI lanes (0–2); brighter on REAL, dimmer on AI. */
+const SUN_BRIGHT_AI = 0.8;
+const SUN_BRIGHT_REAL = 1.06;
+function updateRealSunLaneDepth() {
+  if (!realSun) return;
+  const inFront = S.lane >= 3;
+  if (inFront === lastRealSunInFront) return;
+  lastRealSunInFront = inFront;
+  const bright = inFront ? SUN_BRIGHT_REAL : SUN_BRIGHT_AI;
+  const ch = realSun.children;
+  for (let i = 0; i < ch.length; i++) {
+    const mesh = ch[i];
+    if (!mesh.isMesh) continue;
+    const m = mesh.material;
+    if (inFront) {
+      m.depthTest = false;
+      m.depthWrite = false;
+      mesh.renderOrder = 8;
+    } else {
+      m.depthTest = true;
+      m.depthWrite = i < 2 ? false : true;
+      mesh.renderOrder = -2;
+    }
+    if (mesh.userData.sunOpBase != null) {
+      m.opacity = mesh.userData.sunOpBase * bright;
+    }
+    if (mesh.userData.sunColBase) {
+      m.color.copy(mesh.userData.sunColBase).multiplyScalar(bright);
+    }
+    m.needsUpdate = true;
+  }
+}
+
+function updateEnvBackdrops(dt) {
+  const z = S.pZ + 92;
+  const zFar = z - 28;
+  const setSky = (mesh, farMesh, x, yFore, yFar, zBump = 0) => {
+    if (mesh) {
+      mesh.position.set(x, yFore, z + zBump);
+    }
+    if (farMesh) {
+      farMesh.position.set(x, yFar, zFar + zBump);
+    }
+  };
+  setSky(aiSkyPlane, aiSkyPlaneFar, -110, 28, 38, 0);
+  if (realSkyDome) {
+    realSkyDome.position.set(108, 0, z + 84);
+  }
+  if (realCloudVolume) {
+    realCloudVolume.position.set(96, 36, z + 120);
+    if (realCloudVolume.material && realCloudVolume.material.uniforms && realCloudVolume.material.uniforms.cameraPos) {
+      realCloudVolume.material.uniforms.cameraPos.value.copy(camera.position);
+    }
+  }
+
+  // Deeper than sky quads → parallax; planet rotates + slow bob.
+  const zDeep = z + 38;
+  if (aiPlanet) {
+    aiPlanet.position.set(-128, aiPlanetBaseY, zDeep + 6);
+    aiPlanet.position.y = aiPlanetBaseY + Math.sin(S.elapsed * 0.38) * 2.4;
+    aiPlanet.rotation.y += (dt || 0.016) * 0.11;
+  }
+  if (realSun) {
+    realSun.position.set(132, 58, z + 84);
+    updateRealSunLaneDepth();
+  }
+
+  const dts = dt || 0.016;
+  const zVfx = z + 22;
+  for (let i = 0; i < aiTwinkleMeshes.length; i++) {
+    const m = aiTwinkleMeshes[i];
+    const a = i * 1.41;
+    m.position.set(
+      -38 - (i % 7) * 11 - Math.sin(a + S.elapsed * 0.2) * 6,
+      36 + (i % 5) * 4.2 + Math.cos(a * 0.7) * 3,
+      zVfx + (i % 6) * 6 + Math.sin(i + S.elapsed * 0.15) * 4
+    );
+    const pulse = 0.5 + 0.5 * Math.sin(S.elapsed * m.userData.rate + m.userData.phase);
+    m.material.opacity = m.userData.baseOp * (0.2 + 0.85 * pulse);
+  }
+
+  for (const mesh of aiShootingStars) {
+    if (mesh.userData.delay > 0) {
+      mesh.userData.delay -= dts;
+      if (mesh.userData.delay <= 0) resetShootingStar(mesh, z);
+      continue;
+    }
+    mesh.userData.t += dts;
+    mesh.position.addScaledVector(mesh.userData.vel, dts);
+    if (mesh.userData.t > mesh.userData.dur || mesh.position.z < S.pZ - 20 || mesh.position.y < 8) {
+      mesh.userData.delay = 0.4 + Math.random() * 2.2;
+      mesh.visible = false;
+    }
+  }
+
+  // Wrapped left neon: slow travelling pulse along opacity (reads as light chasing the building edge).
+  let i = 0;
+  for (const mesh of skylineNeonWrapMeshes) {
+    if (!mesh.material) continue;
+    const base = mesh.userData.neonBaseOp ?? 0.88;
+    const wave = 0.5 + 0.5 * Math.sin(S.elapsed * 1.85 + i * 0.55);
+    mesh.material.opacity = base * (0.72 + 0.28 * wave);
+    i++;
+  }
+
+  if (neonCitySkylineGroup.userData.ready && PINNED_AI_SKYLINE.enabled) {
+    neonCitySkylineGroup.position.set(
+      PINNED_AI_SKYLINE.x,
+      PINNED_AI_SKYLINE.y,
+      PINNED_AI_SKYLINE.z
+    );
+    neonCitySkylineGroup.rotation.set(0, PINNED_AI_SKYLINE.yaw, 0);
+  }
+}
+
+// --- Real world GLB environment (buildings + trees + street props on x > 0) ---
+const envProtos = {
+  building: null,
+  tree: null,
+  palm: null,
+  lamp: null,
+  bench: null,
+  trash: null,
+  bird: null,
+  /** Optional real-side deadly obstacle (see `loadEnvAssets`). */
+  hurdle: null,
+};
+let envReady = false;
+const aiEnvProtos = { spire: null, hq: null, holo: null };
+let aiEnvReady = false;
+
+function cloneBirdProto() {
+  const proto = envProtos.bird;
+  if (!proto) return null;
+  let skinned = false;
+  proto.traverse((o) => {
+    if (o.isSkinnedMesh) skinned = true;
+  });
+  return skinned ? SkeletonUtils.clone(proto) : proto.clone();
+}
+
+/** World-space Y of the flat roof line for a real GLB building placed at height `bh` (matches env layout math). */
+function realBuildingRoofTopY(gy, bh) {
+  const bProto = envProtos.building;
+  if (!bProto) return gy + bh;
+  const bnh = bProto.userData.normH || 1;
+  const bminY = bProto.userData.normMinY || 0;
+  const bs = bh / bnh;
+  const wy = gy - bminY * bs;
+  return wy + bnh * bs;
+}
+
+/** Birds perched on real-side GLB building roofs: same path Z / height as layout rows; face like buildings. */
+function addBirdsOnRealBuildingRoofs(eg, tileBaseZ, hw, gy) {
+  if (!envProtos.bird || !envProtos.building) return;
+  const xBuild = hw + C.REAL_BUILDING_LATERAL;
+  const roofBirds = [
+    { oz: 7.2, bh: 5.0, lateralOff: -0.28, hBird: 0.52, yawExtra: 0.35 },
+    { oz: 13.6, bh: 4.8, lateralOff: 0.32, hBird: 0.48, yawExtra: -0.55 },
+  ];
+  const bnh = envProtos.bird.userData.normH || 1;
+  const bminY = envProtos.bird.userData.normMinY || 0;
+  for (const cfg of roofBirds) {
+    const br = cloneBirdProto();
+    if (!br) continue;
+    const s = cfg.hBird / bnh;
+    br.scale.setScalar(s);
+    eg.add(br);
+    const pathZ = tileBaseZ + cfg.oz;
+    const lateral = xBuild + cfg.lateralOff;
+    const w = worldXZFromPath(lateral, pathZ);
+    const roofY = realBuildingRoofTopY(gy, cfg.bh);
+    const roofLift = typeof cfg.roofLift === 'number' ? cfg.roofLift : 0.22;
+    const wy = roofY + roofLift - bminY * s;
+    br.position.set(w.x, wy, w.z - tileBaseZ);
+    const tw = worldXZFromPath(0, pathZ);
+    br.updateMatrixWorld(true);
+    br.lookAt(tw.x, wy, tw.z);
+    br.rotateY(C.ENV_BUILDING_YAW_EXTRA);
+    if (typeof cfg.yawExtra === 'number') br.rotateY(cfg.yawExtra);
+    br.traverse((o) => {
+      o.frustumCulled = false;
+      if (!o.isMesh || !o.material) return;
+      o.renderOrder = 8;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (const m of mats) {
+        installWorldSplitOnMaterial(m);
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = -3;
+        m.polygonOffsetUnits = -3;
+      }
+    });
+  }
+}
+
+function addRealEnvGroup(tileGroup) {
+  if (!envReady) return;
+  const old = tileGroup.userData.envGroup;
+  if (old) tileGroup.remove(old);
+
+  const tileBaseZ = tileGroup.position.z;
+  const hw = C.ROAD_W / 2;
+  const gy = C.REAL_GROUND_Y;
+  const eg = new THREE.Group();
+  tileGroup.add(eg);
+
+  // Lateral offsets from centerline (same as straight road: grass to the right of +hw).
+  const xTrees = hw + 1.18;
+  const xBuild = hw + C.REAL_BUILDING_LATERAL;
+  // Outer grass edge (furthest from roadway): ribbon is [hw, hw + REAL_GRASS_DEPTH].
+  const xPalm = hw + C.REAL_GRASS_DEPTH - 1.05;
+  const xLamp = hw + 1.52;
+  const xBench = hw + 2.1;
+  const xTrash = hw + 1.78;
+  const layout = [
+    { type: 'tree',     ox: xTrees, oz: 2.4,  h: 2.35, faceRoad: false },
+    { type: 'palm',     ox: xPalm,  oz: 2.9,  h: 2.65, faceRoad: false },
+    { type: 'lamp',     ox: xLamp,  oz: 3.5,  h: 2.9,  faceRoad: true },
+    { type: 'bench',    ox: xBench, oz: 5.2,  h: 0.95, faceRoad: true },
+    { type: 'building', ox: xBuild, oz: 7.2,  h: 5.0,  faceRoad: true },
+    { type: 'trash',    ox: xTrash, oz: 8.5,  h: 0.95, faceRoad: true },
+    { type: 'tree',     ox: xTrees, oz: 10.2, h: 2.45, faceRoad: false },
+    { type: 'palm',     ox: xPalm,  oz: 10.6, h: 2.75, faceRoad: false },
+    { type: 'lamp',     ox: xLamp,  oz: 12.1, h: 2.95, faceRoad: true },
+    { type: 'building', ox: xBuild, oz: 13.6, h: 4.8,  faceRoad: true },
+    { type: 'palm',     ox: xPalm,  oz: 15.0, h: 2.7,  faceRoad: false },
+    { type: 'bench',    ox: xBench, oz: 17.0, h: 0.95, faceRoad: true },
+    { type: 'trash',    ox: xTrash, oz: 18.1, h: 0.9,  faceRoad: true },
+  ];
+
+  for (const p of layout) {
+    const proto = envProtos[p.type];
+    if (!proto) continue;
+    const clone = proto.clone();
+    const nh = proto.userData.normH || 1;
+    const minY = proto.userData.normMinY || 0;
+    const s = p.h / nh;
+    clone.scale.setScalar(s);
+    eg.add(clone);
+    const pathZ = tileBaseZ + p.oz;
+    const w = worldXZFromPath(p.ox, pathZ);
+    const wy = gy - minY * s;
+    clone.position.set(w.x, wy, w.z - tileBaseZ);
+    if (p.faceRoad || p.type === 'building') {
+      const tw = worldXZFromPath(0, pathZ);
+      clone.updateMatrixWorld(true);
+      clone.lookAt(tw.x, wy, tw.z);
+      const yawFix = p.type === 'building' ? C.ENV_BUILDING_YAW_EXTRA : 0;
+      clone.rotateY(yawFix);
+    } else {
+      clone.rotation.y = roadYawAtZ(pathZ);
+    }
+  }
+
+  addBirdsOnRealBuildingRoofs(eg, tileBaseZ, hw, gy);
+
+  applyWorldLayer(eg, L_REAL);
+  tileGroup.userData.envGroup = eg;
+}
+
+function addAiEnvGroup(tileGroup) {
+  if (!aiEnvReady) return;
+  const old = tileGroup.userData.aiEnvGroup;
+  if (old) {
+    tileGroup.remove(old);
+    tileGroup.userData.aiNeonHqRoot = null;
+    tileGroup.userData.aiNeonSpireRoot = null;
+  }
+
+  const tileBaseZ = tileGroup.position.z;
+  const hw = C.ROAD_W / 2;
+  // Snap AI skyline bases to just above the neon grid.
+  const gy = C.REAL_GROUND_Y + 0.02;
+  const eg = new THREE.Group();
+  tileGroup.add(eg);
+
+  // HQ + spire every tile; cross-tile neon bridge links previous spire → this HQ.
+  const xBackNear = -(hw + C.REAL_GRASS_DEPTH + 7.4);
+  const xBackFar = -(hw + C.REAL_GRASS_DEPTH + 9.0);
+  const hqOz = 4.2;
+  const spireOz = 14.2;
+  const layout = [
+    { type: 'hq',    ox: xBackNear, oz: hqOz,    h: 11.8 },
+    { type: 'spire', ox: xBackFar,  oz: spireOz, h: 10.8 },
+  ];
+
+  let hqClone = null;
+  let spireClone = null;
+  for (const p of layout) {
+    const proto = aiEnvProtos[p.type];
+    if (!proto) continue;
+    const clone = proto.clone(true);
+    const nh = proto.userData.normH || 1;
+    const s = p.h / nh;
+    clone.scale.setScalar(s);
+    eg.add(clone);
+    if (p.type === 'hq') hqClone = clone;
+    if (p.type === 'spire') spireClone = clone;
+    const pathZ = tileBaseZ + p.oz;
+    const w = worldXZFromPath(p.ox, pathZ);
+    clone.position.set(w.x, gy, w.z - tileBaseZ);
+
+    // Face inward toward roadway to match right-side perspective logic.
+    const tw = worldXZFromPath(0, pathZ);
+    clone.updateMatrixWorld(true);
+    clone.lookAt(tw.x, gy, tw.z);
+    clone.rotateY(-C.ENV_BUILDING_YAW_EXTRA * 0.7);
+    clone.updateMatrixWorld(true);
+
+    // Final placement pass: align the transformed model base to neon plane.
+    const finalBox = new THREE.Box3().setFromObject(clone);
+    if (!finalBox.isEmpty()) {
+      clone.position.y += (gy - finalBox.min.y);
+      clone.updateMatrixWorld(true);
+    }
+  }
+
+  tileGroup.userData.aiNeonHqRoot = hqClone;
+  tileGroup.userData.aiNeonSpireRoot = spireClone;
+
+  addAiNeonGltfChain(eg, hqClone, spireClone);
+  addAiNeonGltfBridgeFromPrevTile(findRoadTileAtBaseZ(tileBaseZ - C.TILE_LEN), hqClone);
+
+  applyWorldLayer(eg, L_AI);
+  eg.traverse((o) => {
+    if (!o.isMesh && !o.isLine && !o.isLineSegments) return;
+    o.layers.enable(L_BLOOM);
+  });
+  tileGroup.userData.aiEnvGroup = eg;
+}
+
+async function loadEnvAssets() {
+  const loader = makeGLTFLoader();
+  const loadOptionalFromCandidates = async (label, candidates) => {
+    for (const candidate of candidates) {
+      try {
+        return await loader.loadAsync(assetUrl(candidate));
+      } catch (_) {
+        // Try next candidate.
+      }
+    }
+    console.warn(`[Real env] Optional asset missing: ${label}`);
+    return null;
+  };
+  try {
+    const [bg, tg, pg, lamp, bench, trash] = await Promise.all([
+      loader.loadAsync('assets/Environment/glTF/building.glb'),
+      loader.loadAsync('assets/Environment/glTF/low-poly_tree.glb'),
+      loader.loadAsync('assets/Environment/glTF/tropical_palm_tree.glb'),
+      loadOptionalFromCandidates('lamp_post_light', [
+        'assets/lamp_post_light.glb',
+        'assets/Environment/glTF/lamp_post_light.glb',
+        'assets/Environment/glTF/lamp-post-light.glb',
+        'assets/kenney_city-kit-commercial_2.1/Models/GLB format/lamp-post-light.glb',
+      ]),
+      loadOptionalFromCandidates('park_bench', [
+        'assets/park_bench.glb',
+        'assets/Environment/glTF/park_bench.glb',
+        'assets/Environment/glTF/park-bench.glb',
+        'assets/kenney_city-kit-commercial_2.1/Models/GLB format/park-bench.glb',
+      ]),
+      loadOptionalFromCandidates('trash_can_metal', [
+        'assets/trash_can_metal.glb',
+        'assets/Environment/glTF/trash_can_metal.glb',
+        'assets/Environment/glTF/trash-can-metal.glb',
+        'assets/kenney_city-kit-commercial_2.1/Models/GLB format/trash-can-metal.glb',
+      ]),
+    ]);
+
+    function prepModel(s) {
+      const box = new THREE.Box3().setFromObject(s);
+      s.userData.normH    = box.max.y - box.min.y || 1;
+      s.userData.normMinY = box.min.y;
+      return s;
+    }
+
+    /** Bottom-center of world AABB at origin so tile placement + street yaw stay stable. */
+    function prepEnvBuilding(root) {
+      root.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(root);
+      if (!box.isEmpty()) {
+        const cx = (box.max.x + box.min.x) * 0.5;
+        const by = box.min.y;
+        const cz = (box.max.z + box.min.z) * 0.5;
+        root.position.x -= cx;
+        root.position.y -= by;
+        root.position.z -= cz;
+        root.updateMatrixWorld(true);
+      }
+      const b2 = new THREE.Box3().setFromObject(root);
+      root.userData.normH = Math.max(1e-6, b2.max.y - b2.min.y);
+      root.userData.normMinY = b2.min.y;
+      return root;
+    }
+
+    envProtos.building = prepEnvBuilding(bg.scene);
+    envProtos.building.traverse((ch) => {
+      if (ch.isMesh) {
+        ch.castShadow = true;
+        ch.receiveShadow = true;
+      }
+    });
+    envProtos.tree     = prepModel(tg.scene);
+    envProtos.palm     = prepModel(pg.scene);
+    if (lamp?.scene) envProtos.lamp = prepModel(lamp.scene);
+    if (bench?.scene) envProtos.bench = prepModel(bench.scene);
+    if (trash?.scene) envProtos.trash = prepModel(trash.scene);
+    const birdGltf = await loadOptionalFromCandidates('bird', ['assets/bird.glb']);
+    if (birdGltf?.scene) envProtos.bird = prepModel(birdGltf.scene);
+    const hurdleGltf = await loadOptionalFromCandidates('hurdle', [
+      'assets/hurdle.glb',
+      'assets/Environment/glTF/hurdle.glb',
+    ]);
+    if (hurdleGltf?.scene) envProtos.hurdle = prepModel(hurdleGltf.scene);
+    envReady = true;
+
+    // Populate already-created tiles retroactively
+    for (const tile of roadTiles) addRealEnvGroup(tile);
+  } catch (e) {
+    console.warn('Env assets load failed:', e);
+  }
+}
+
+async function loadAiEnvAssets() {
+  const loader = makeGLTFLoader();
+  const loadAiOptionalGltf = async (candidates) => {
+    for (const path of candidates) {
+      try {
+        return await loader.loadAsync(assetUrl(path));
+      } catch (_) { /* try next */ }
+    }
+    return null;
+  };
+  const loadOnceFromCandidates = async (label, candidates) => {
+    let lastErr = null;
+    for (const candidate of candidates) {
+      try {
+        return await loader.loadAsync(assetUrl(candidate));
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw new Error(`[AI env] Failed to load ${label}. Tried: ${candidates.join(', ')}. Last error: ${lastErr?.message || lastErr}`);
+  };
+  const prepAiBuilding = (root) => {
+    root.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(root);
+    if (!box.isEmpty()) {
+      const cx = (box.max.x + box.min.x) * 0.5;
+      const by = box.min.y;
+      const cz = (box.max.z + box.min.z) * 0.5;
+      root.position.x -= cx;
+      root.position.y -= by;
+      root.position.z -= cz;
+      root.updateMatrixWorld(true);
+    }
+    const b2 = new THREE.Box3().setFromObject(root);
+    root.userData.normH = Math.max(1e-6, b2.max.y - b2.min.y);
+    root.userData.normMinY = b2.min.y;
+    root.traverse((ch) => {
+      if (!ch.isMesh || !ch.material) return;
+      // Cheaper rendering for skyline massing.
+      ch.castShadow = false;
+      ch.receiveShadow = false;
+      const mats = Array.isArray(ch.material) ? ch.material : [ch.material];
+      for (const mat of mats) {
+        if (!mat) continue;
+        if ('emissiveIntensity' in mat && mat.emissiveIntensity < 1.2) mat.emissiveIntensity = 1.2;
+      }
+    });
+    return root;
+  };
+
+  const holoCandidates = [
+    'assets/holo.glb',
+    'assets/models/holo.glb',
+    'assets/ss/holo.glb',
+    'assets/Environment/glTF/holo.glb',
+  ];
+  const holoGltf = await loadAiOptionalGltf(holoCandidates);
+  if (holoGltf?.scene) aiEnvProtos.holo = prepAiBuilding(holoGltf.scene);
+  else console.warn(`[AI env] Optional asset missing: holo (tried ${holoCandidates.join(', ')})`);
+
+  try {
+    const [spire, hq] = await Promise.all([
+      loadOnceFromCandidates('AI_Cyderk_Neon_Spire', [
+        'assets/AI_Cyderk_Neon_Spire.glb',
+        'assets/models/AI_Cyderk_Neon_Spire.glb',
+        'assets/ss/AI_Cyderk_Neon_Spire.glb',
+      ]),
+      loadOnceFromCandidates('Vibejam_HQ', [
+        'assets/Vibejam_HQ.glb',
+        'assets/ss/Vibejam_HQ.glb',
+        'assets/models/Vibejam_HQ.glb',
+      ]),
+    ]);
+    aiEnvProtos.spire = prepAiBuilding(spire.scene);
+    aiEnvProtos.hq = prepAiBuilding(hq.scene);
+    aiEnvReady = true;
+    for (const tile of roadTiles) populateTile(tile, tile.position.z);
+  } catch (e) {
+    console.warn('AI env assets load failed:', e);
+    if (aiEnvProtos.holo) {
+      for (const tile of roadTiles) populateTile(tile, tile.position.z);
+    }
+  }
+}
+
+/** Left-edge neon quads on skyline towers (opacity pulse in `updateEnvBackdrops`). */
+const skylineNeonWrapMeshes = [];
+
+/** GLTF skyline row: follows the road on the AI (left) side like backdrops — not fixed world Z. */
+const neonCitySkylineGroup = new THREE.Group();
+neonCitySkylineGroup.userData.ready = false;
+neonCitySkylineGroup.frustumCulled = false;
+const PINNED_AI_SKYLINE = {
+  enabled: true,
+  x: -64,
+  y: 0,
+  z: 132,
+  yaw: 0.14,
+};
+
+/** Bottom-center GLTF on xz, min Y at 0 (same idea as `prepEnvBuilding`). */
+function prepSkylineGltfRoot(root) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  if (!box.isEmpty()) {
+    const cx = (box.max.x + box.min.x) * 0.5;
+    const by = box.min.y;
+    const cz = (box.max.z + box.min.z) * 0.5;
+    root.position.x -= cx;
+    root.position.y -= by;
+    root.position.z -= cz;
+    root.updateMatrixWorld(true);
+  }
+  const b2 = new THREE.Box3().setFromObject(root);
+  return Math.max(1e-6, b2.max.y - b2.min.y);
+}
+
+function styleNeonSkylineMeshes(root, shadows) {
+  root.traverse((o) => {
+    if (!o.isMesh || !o.material) return;
+    o.castShadow = shadows;
+    o.receiveShadow = shadows;
+    o.frustumCulled = false;
+    o.layers.enable(L_BLOOM);
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    for (const mat of mats) {
+      if (!mat) continue;
+      if (
+        mat.isMeshStandardMaterial ||
+        mat.isMeshPhysicalMaterial ||
+        mat.isMeshBasicMaterial ||
+        mat.isMeshLambertMaterial ||
+        mat.isMeshPhongMaterial ||
+        mat.isMeshToonMaterial
+      ) {
+        installWorldSplitOnMaterial(mat);
+        if ('toneMapped' in mat) mat.toneMapped = true;
+      }
+    }
+  });
+}
+
+function addNeonSkylineInstance(parent, gltfScene, spec) {
+  const model = gltfScene.clone(true);
+  const normH = prepSkylineGltfRoot(model);
+  const s = spec.targetH / normH;
+  model.scale.setScalar(s);
+  model.rotation.y = spec.yaw + Math.PI;
+  model.updateMatrixWorld(true);
+
+  // Final safety pass: after scale/rotation, snap model base to local y=0.
+  // This prevents GLTF pivot/offset quirks from sinking below the neon plane.
+  const modelBox = new THREE.Box3().setFromObject(model);
+  if (!modelBox.isEmpty()) {
+    model.position.y -= modelBox.min.y;
+    model.updateMatrixWorld(true);
+  }
+
+  const wrap = new THREE.Group();
+  wrap.add(model);
+  // Initial placement near the AI neon grid shoulder.
+  const gridY = C.REAL_GROUND_Y + 0.02;
+  const bottomY = (spec.baseY ?? gridY);
+  wrap.position.set(spec.lx, bottomY, spec.lz);
+  styleNeonSkylineMeshes(wrap, false);
+  parent.add(wrap);
+  applyWorldLayer(wrap, L_AI);
+  wrap.traverse((o) => {
+    if (o.isMesh) o.layers.enable(L_BLOOM);
+  });
+
+  // Final placement pass in world space: keep base exactly on neon plane.
+  if (spec.baseY == null) {
+    wrap.updateMatrixWorld(true);
+    const finalBox = new THREE.Box3().setFromObject(wrap);
+    if (!finalBox.isEmpty()) {
+      wrap.position.y += (gridY - finalBox.min.y);
+      wrap.updateMatrixWorld(true);
+    }
+  }
+}
+
+async function buildNeonCitySkyline() {
+  const loader = makeGLTFLoader();
+  const loadOnceFromCandidates = async (label, candidates) => {
+    let lastErr = null;
+    for (const candidate of candidates) {
+      try {
+        const gltf = await loader.loadAsync(assetUrl(candidate));
+        console.info(`[Neon skyline] Loaded ${label} from ${candidate}`);
+        return gltf;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw new Error(`[Neon skyline] Failed to load ${label}. Tried: ${candidates.join(', ')}. Last error: ${lastErr?.message || lastErr}`);
+  };
+  try {
+    // Debug-friendly setup: load each requested skyline asset exactly once,
+    // then place one instance each on the neon (AI) side.
+    const [spireGltf, hqGltf] = await Promise.all([
+      loadOnceFromCandidates('AI_Cyderk_Neon_Spire', [
+        'assets/AI_Cyderk_Neon_Spire.glb',
+        'assets/models/AI_Cyderk_Neon_Spire.glb',
+        'assets/ss/AI_Cyderk_Neon_Spire.glb',
+      ]),
+      loadOnceFromCandidates('Vibejam_HQ', [
+        'assets/Vibejam_HQ.glb',
+        'assets/ss/Vibejam_HQ.glb',
+        'assets/models/Vibejam_HQ.glb',
+      ]),
+    ]);
+
+    addNeonSkylineInstance(neonCitySkylineGroup, spireGltf.scene, {
+      // Keep skyline clearly visible on AI/left half near the road edge.
+      lx: -18,
+      lz: 10,
+      targetH: 196,
+      yaw: -0.03,
+    });
+    addNeonSkylineInstance(neonCitySkylineGroup, hqGltf.scene, {
+      lx: -38,
+      lz: 30,
+      targetH: 182,
+      yaw: 0.04,
+    });
+
+    neonCitySkylineGroup.userData.ready = true;
+  } catch (e) {
+    console.warn('Neon city skyline GLTF load failed:', e);
+  }
+}
+
+function addManualTexturedBuilding() {
+  const skylineGroup = new THREE.Group();
+  skylineGroup.position.set(0, 0, 0);
+  scene.add(skylineGroup);
+  applyWorldLayer(skylineGroup, L_AI);
+
+  const neonMat = new THREE.MeshStandardMaterial({
+    color: 0x1a6aa8,
+    emissive: 0x55e8ff,
+    emissiveIntensity: 2.6,
+    roughness: 0.28,
+    metalness: 0.35,
+    transparent: true,
+    opacity: 0.96,
+    toneMapped: true,
+  });
+  installWorldSplitOnMaterial(neonMat);
+
+  function addNeonDetails(building, h) {
+    const half = 18;
+    const gh = h * 0.8;
+    const zw = 0.85;
+    const zFace = half + 0.12;
+
+    // Front (+Z) face — left and right verticals
+    const stripLeft = new THREE.Mesh(new THREE.PlaneGeometry(zw, gh), neonMat.clone());
+    stripLeft.position.set(-(half - 0.35), 0, zFace);
+    stripLeft.castShadow = false;
+    building.add(stripLeft);
+
+    const stripRight = new THREE.Mesh(new THREE.PlaneGeometry(zw, gh), neonMat.clone());
+    stripRight.position.set(half - 0.35, 0, zFace);
+    stripRight.layers.enable(L_BLOOM);
+    stripRight.castShadow = false;
+    building.add(stripRight);
+
+    // Blue bars on the left wrap around the perimeter: −X face + back −Z corner (U-shaped band)
+    const stripLsideF = new THREE.Mesh(new THREE.PlaneGeometry(zw, gh), neonMat.clone());
+    stripLsideF.rotation.y = Math.PI / 2;
+    stripLsideF.position.set(-(half + 0.08), 0, half - 0.42);
+    stripLsideF.castShadow = false;
+    building.add(stripLsideF);
+
+    const stripLsideB = new THREE.Mesh(new THREE.PlaneGeometry(zw, gh), neonMat.clone());
+    stripLsideB.rotation.y = Math.PI / 2;
+    stripLsideB.position.set(-(half + 0.08), 0, -(half - 0.42));
+    stripLsideB.castShadow = false;
+    building.add(stripLsideB);
+
+    const stripLback = new THREE.Mesh(new THREE.PlaneGeometry(zw * 0.92, gh * 0.88), neonMat.clone());
+    stripLback.rotation.y = Math.PI;
+    stripLback.position.set(-(half - 0.38), 0, -(zFace));
+    stripLback.castShadow = false;
+    building.add(stripLback);
+
+    for (const m of [stripLeft, stripLsideF, stripLsideB, stripLback]) {
+      m.userData.neonBaseOp = m.material.opacity;
+      m.layers.enable(L_BLOOM);
+      m.castShadow = false;
+      skylineNeonWrapMeshes.push(m);
+    }
+
+    const topBand = new THREE.Mesh(new THREE.PlaneGeometry(31, 1.2), neonMat.clone());
+    topBand.position.set(0, h * 0.4, zFace);
+    topBand.layers.enable(L_BLOOM);
+    topBand.castShadow = false;
+    building.add(topBand);
+
+    const neonGlow = new THREE.PointLight(0x63f2ff, 2.2, 70);
+    neonGlow.position.set(0, h * 0.2, 12);
+    building.add(neonGlow);
+  }
+
+  function addSkylineBuilding(x, y, z, h) {
+    const building = new THREE.Mesh(
+      new THREE.BoxGeometry(36, h, 36),
+      new THREE.MeshStandardMaterial({
+        color: 0xd8dce8,
+        emissive: 0x3a4a78,
+        emissiveIntensity: 0.95,
+        roughness: 0.34,
+        metalness: 0.12,
+      }),
+    );
+    building.layers.enable(L_BLOOM);
+    installWorldSplitOnMaterial(building.material);
+    building.castShadow = true;
+    building.receiveShadow = true;
+    building.position.set(x, y, z);
+    building.rotation.set(0, 0, 0);
+    addNeonDetails(building, h);
+    skylineGroup.add(building);
+    return building;
+  }
+
+  const buildingPre = addSkylineBuilding(-38, -20, 292, 184);
+  const buildingA = addSkylineBuilding(-96, -20, 300, 200);
+  const buildingB = addSkylineBuilding(-166, -20, 308, 176);
+  const buildingC = addSkylineBuilding(-246, -20, 316, 192);
+  const buildingD = addSkylineBuilding(-336, -20, 324, 168);
+
+  new THREE.TextureLoader().load(assetUrl('assets/images/vaporwave_grid.jpg'), tex => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    buildingPre.material.map = tex;
+    buildingPre.material.needsUpdate = true;
+    buildingA.material.map = tex;
+    buildingA.material.needsUpdate = true;
+    buildingC.material.map = tex;
+    buildingC.material.needsUpdate = true;
+  });
+
+  new THREE.TextureLoader().load(assetUrl('assets/images/grid_twocolors.png'), tex => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    buildingB.material.map = tex;
+    buildingB.material.needsUpdate = true;
+    buildingD.material.map = tex;
+    buildingD.material.needsUpdate = true;
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// PLAYER VEHICLE
+// ═══════════════════════════════════════════════════════
+const playerGroup = new THREE.Group();
+playerGroup.rotation.order = 'YXZ';
+/** Holds hover + skate so the avatar (added later) renders on top. */
+const vehicleMount = new THREE.Group();
+/** GLB root for NEON-side hoverboard; null until load succeeds. */
+let vehicleNeonGlbRoot = null;
+/** GLB root for REAL-side skateboard; null until load succeeds. */
+let vehicleSkateboardRoot = null;
+/** GLB root for AI-side follower drone; null until load succeeds. */
+let droneFollowerRoot = null;
+const DRONE_FOLLOW_SIDE_OFFSET = -4.8;
+const DRONE_FOLLOW_PATH_Z_AHEAD = 2.4;
+const DRONE_FOLLOW_BASE_Y = 4.2;
+const DRONE_BOB_AMP = 0.38;
+const DRONE_BOB_SPD = 1.7;
+const DRONE_UNLOCK_CORRECT_ANSWERS = 5;
+const DRONE_BEAM_DURATION = 0.45;
+let droneBeamT = 0;
+const droneBeam = {
+  mesh: null,
+  from: new THREE.Vector3(),
+  to: new THREE.Vector3(),
+};
+
+function buildVehicle() {
+  playerGroup.add(vehicleMount);
+
+  const pw = worldXZFromPath(C.LANES[C.LANE_START], 0);
+  playerGroup.position.set(pw.x, C.VEH_Y, pw.z);
+  playerGroup.rotation.y = roadYawAtZ(0);
+  scene.add(playerGroup);
+  applyWorldLayer(playerGroup, L_AVATAR);
+}
+
+function updateVehicleForLaneSide() {
+  const onReal = S.curX > 0.03;
+  const onNeon = S.curX < -0.03;
+
+  if (vehicleSkateboardRoot) vehicleSkateboardRoot.visible = onReal;
+
+  if (onReal) {
+    if (vehicleNeonGlbRoot) vehicleNeonGlbRoot.visible = false;
+  } else if (onNeon) {
+    if (vehicleNeonGlbRoot) vehicleNeonGlbRoot.visible = true;
+  } else if (vehicleNeonGlbRoot) {
+    vehicleNeonGlbRoot.visible = false;
+  }
+}
+
+function updateDroneFollower() {
+  if (!droneFollowerRoot) return;
+  if (S.droneConsumed) {
+    droneFollowerRoot.visible = false;
+    return;
+  }
+  const unlocked = S.gatesCorrect >= DRONE_UNLOCK_CORRECT_ANSWERS;
+  droneFollowerRoot.visible = unlocked;
+  if (!unlocked) return;
+  if (!S.dronePicked) {
+    S.dronePicked = true;
+    S.droneFireReady = true;
+    updateHUD();
+    showFloat('Press S to use drone', '#66EEFF', '50%', '30%');
+  }
+  const followPathX = S.curX + DRONE_FOLLOW_SIDE_OFFSET;
+  const followPathZ = S.pZ + DRONE_FOLLOW_PATH_Z_AHEAD;
+  const w = worldXZFromPath(followPathX, followPathZ);
+  droneFollowerRoot.position.set(
+    w.x,
+    playerGroup.position.y + DRONE_FOLLOW_BASE_Y + Math.sin(S.elapsed * DRONE_BOB_SPD) * DRONE_BOB_AMP,
+    w.z,
+  );
+  droneFollowerRoot.rotation.set(0, roadYawAtZ(followPathZ), 0);
+}
+
+function ensureDroneBeamMesh() {
+  if (droneBeam.mesh) return droneBeam.mesh;
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x66f6ff,
+    transparent: true,
+    opacity: 0.9,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1, 12, 1, true), mat);
+  mesh.visible = false;
+  applyWorldLayer(mesh, L_AVATAR);
+  mesh.layers.enable(L_BLOOM);
+  scene.add(mesh);
+  droneBeam.mesh = mesh;
+  return mesh;
+}
+
+function updateDroneBeam(dt) {
+  if (!droneBeam.mesh || droneBeamT <= 0) {
+    if (droneBeam.mesh) droneBeam.mesh.visible = false;
+    return;
+  }
+  droneBeamT = Math.max(0, droneBeamT - dt);
+  const mesh = droneBeam.mesh;
+  const from = droneBeam.from;
+  const to = droneBeam.to;
+  const dir = new THREE.Vector3().subVectors(to, from);
+  const len = Math.max(1e-4, dir.length());
+  mesh.visible = true;
+  mesh.position.copy(from).addScaledVector(dir, 0.5);
+  mesh.scale.set(1, len, 1);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  mesh.material.opacity = 0.2 + 0.7 * (droneBeamT / DRONE_BEAM_DURATION);
+  if (droneBeamT <= 0) mesh.visible = false;
+}
+
+function blurHorizonBillboardImage() {
+  const scr = horizonBB.screen;
+  if (!scr || !scr.material || !scr.material.map) return;
+  const map = scr.material.map;
+  const src = map.image;
+  const sw = src && (src.naturalWidth || src.videoWidth || src.width);
+  const sh = src && (src.naturalHeight || src.videoHeight || src.height);
+  if (!sw || !sh) return;
+  const tiny = document.createElement('canvas');
+  tiny.width = Math.max(32, Math.floor(sw * 0.09));
+  tiny.height = Math.max(32, Math.floor(sh * 0.09));
+  const tx = tiny.getContext('2d');
+  tx.imageSmoothingEnabled = true;
+  tx.drawImage(src, 0, 0, tiny.width, tiny.height);
+  const up = document.createElement('canvas');
+  up.width = sw;
+  up.height = sh;
+  const ux = up.getContext('2d');
+  ux.imageSmoothingEnabled = true;
+  ux.drawImage(tiny, 0, 0, up.width, up.height);
+  map.image = up;
+  map.needsUpdate = true;
+}
+
+function tryActivateDroneShot() {
+  if (S.mode !== 'PLAYING' || !S.droneFireReady) return;
+  const pending = gatePool.active.find(g => !g.userData.decided);
+  if (!pending) return;
+  sfx.droneLaser();
+  S.droneFireReady = false;
+  S.droneConsumed = true;
+  if (droneFollowerRoot) droneFollowerRoot.visible = false;
+  updateHUD();
+  pending.userData.droneAutoCorrect = true;
+  pending.userData.decided = true;
+  dom.panelLabel.textContent = '✓ DRONE LOCK';
+  dom.panelLabel.style.color = '#66EEFF';
+  onCorrect(false);
+  const beam = ensureDroneBeamMesh();
+  if (droneFollowerRoot) droneFollowerRoot.getWorldPosition(droneBeam.from);
+  else droneBeam.from.copy(playerGroup.position).add(new THREE.Vector3(-1.4, 2.2, 1.2));
+  if (horizonBB.screen) horizonBB.screen.getWorldPosition(droneBeam.to);
+  else droneBeam.to.copy(pending.position).add(new THREE.Vector3(0, 2.5, 0));
+  beam.visible = true;
+  droneBeamT = DRONE_BEAM_DURATION;
+  blurHorizonBillboardImage();
+  showFloat('DRONE FIRED', '#66EEFF', '50%', '34%');
+}
+
+// ═══════════════════════════════════════════════════════
+// IMAGE GATES
+// ═══════════════════════════════════════════════════════
+const titleTex = mkGateTex('CHOOSE YOUR PATH', 52, '#FFFFFF', 'rgba(100,0,120,0.95)', 900, 72);
+const lLabelTex = mkGateTex('← AI', 56, '#00FFFF', 'rgba(0,40,60,0.92)', 420, 120);
+const rLabelTex = mkGateTex('REAL →', 56, '#FF66FF', 'rgba(60,0,50,0.92)', 420, 120);
+const floorAI = mkGateTex('AI', 96, '#00FFFF', 'rgba(0,30,50,0.88)', 400, 180);
+const floorReal = mkGateTex('REAL', 96, '#FF66FF', 'rgba(50,0,40,0.88)', 400, 180);
+[titleTex, lLabelTex, rLabelTex, floorAI, floorReal].forEach(flipTexForCanvasMirror);
+
+function mkGate() {
+  const g = new THREE.Group();
+  const fm = new THREE.MeshBasicMaterial({ color: COL.MAG });
+
+  // Arch pillars at road edges (±3.2, just outside the outermost lane)
+  const lp = new THREE.Mesh(pillarGeoShared, fm);
+  lp.position.set(-3.2, 1.75, 0); g.add(lp);
+  const rp = new THREE.Mesh(pillarGeoShared, fm.clone());
+  rp.position.set(3.2, 1.75, 0); g.add(rp);
+
+  // Top bar spans full road width
+  const tb = new THREE.Mesh(new THREE.BoxGeometry(6.5, 0.1, 0.1), fm.clone());
+  tb.position.set(0, 3.55, 0); g.add(tb);
+
+  // "CHOOSE YOUR PATH" title above arch
+  const tm = new THREE.Mesh(new THREE.PlaneGeometry(5.8, 0.48),
+    new THREE.MeshBasicMaterial({ map: titleTex, transparent: true, side: THREE.DoubleSide }));
+  tm.rotation.y = Math.PI;
+  tm.position.set(0, 3.88, 0); g.add(tm);
+
+  // Lane labels at world -x (AI) and +x (REAL); flipTexForCanvasMirror fixes legibility with canvas scaleX(-1).
+  const ll = new THREE.Mesh(new THREE.PlaneGeometry(1.85, 0.55),
+    new THREE.MeshBasicMaterial({ map: lLabelTex, transparent: true, side: THREE.DoubleSide }));
+  ll.rotation.y = Math.PI;
+  ll.position.set(-1.5, 0.68, 3.0); g.add(ll);
+  const rl = new THREE.Mesh(new THREE.PlaneGeometry(1.85, 0.55),
+    new THREE.MeshBasicMaterial({ map: rLabelTex, transparent: true, side: THREE.DoubleSide }));
+  rl.rotation.y = Math.PI;
+  rl.position.set(1.5, 0.68, 3.0); g.add(rl);
+
+  // Floor text markers centred on each side
+  const fgeo = new THREE.PlaneGeometry(2.85, 1.05);
+  const fa = new THREE.Mesh(fgeo, new THREE.MeshBasicMaterial({ map: floorAI, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  fa.rotation.x = -Math.PI / 2;
+  fa.position.set(-1.5, 0.015, 6); g.add(fa);
+  const fr = new THREE.Mesh(fgeo.clone(), new THREE.MeshBasicMaterial({ map: floorReal, transparent: true, side: THREE.DoubleSide, depthWrite: false }));
+  fr.rotation.x = -Math.PI / 2;
+  fr.position.set(1.5, 0.015, 6); g.add(fr);
+
+  g.visible = false;
+  applyWorldLayer(g, L_AVATAR);
+  scene.add(g);
+  return g;
+}
+
+// ═══════════════════════════════════════════════════════
+// HORIZON BILLBOARD (fixed path distance ahead of player)
+// ═══════════════════════════════════════════════════════
+const horizonBB = {
+  group: null,
+  screen: null,
+  glowRim: null,
+  backPlate: null,
+  frame: null,
+  innerW: 57.5,
+  innerH: 26.5,
+  /** Bumps when a new challenge texture is requested; stale async callbacks no-op. */
+  pendingBillboardToken: 0,
+};
+
+function buildHorizonBillboard() {
+  const grp = new THREE.Group();
+  const bbW = 58;
+  const bbH = 27;
+  horizonBB.innerW = bbW - 0.5;
+  horizonBB.innerH = bbH - 0.5;
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x15151e, metalness: 0.38, roughness: 0.52 });
+  const pBot = 0.1;
+  const screenBottomY = 20.4;
+  const screenY = screenBottomY + bbH * 0.5;
+  const poleTopY = screenBottomY - 0.28;
+  const pH = poleTopY - pBot;
+  const pCy = pBot + pH * 0.5;
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.78, 1.52, pH, 20),
+    poleMat,
+  );
+  pole.position.set(0, pCy, 0);
+  applyWorldLayer(pole, L_AVATAR);
+  grp.add(pole);
+  // Dark matte behind image so photos stay legible (reduces bloom + sky wash-through).
+  const backMat = new THREE.MeshBasicMaterial({
+    color: 0x020208,
+    transparent: true,
+    opacity: 0.96,
+    depthWrite: true,
+    toneMapped: true,
+  });
+  const backPlate = new THREE.Mesh(new THREE.PlaneGeometry(horizonBB.innerW + 1.4, horizonBB.innerH + 1.4), backMat);
+  backPlate.position.set(0, screenY, 0.55);
+  backPlate.rotation.y = Math.PI;
+  backPlate.renderOrder = 1;
+  applyWorldLayer(backPlate, L_AVATAR);
+  grp.add(backPlate);
+  const frameMat = new THREE.MeshBasicMaterial({
+    color: 0x0a0a12,
+    transparent: true,
+    opacity: 1,
+    depthWrite: true,
+    toneMapped: true,
+  });
+  const frame = new THREE.Mesh(new THREE.PlaneGeometry(horizonBB.innerW + 0.35, horizonBB.innerH + 0.35), frameMat);
+  frame.position.set(0, screenY, 0.12);
+  frame.rotation.y = Math.PI;
+  frame.renderOrder = 2;
+  applyWorldLayer(frame, L_AVATAR);
+  grp.add(frame);
+  // Additive rim behind the image for a short glow when the challenge texture updates.
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x6ec8ff,
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    toneMapped: true,
+    side: THREE.DoubleSide,
+  });
+  const glowRim = new THREE.Mesh(new THREE.PlaneGeometry(horizonBB.innerW + 0.22, horizonBB.innerH + 0.22), glowMat);
+  glowRim.position.set(0, screenY, 0.095);
+  glowRim.rotation.y = Math.PI;
+  glowRim.renderOrder = 15;
+  applyWorldLayer(glowRim, L_AVATAR);
+  glowRim.layers.enable(L_BLOOM);
+  grp.add(glowRim);
+  const screenMat = new THREE.MeshBasicMaterial({
+    transparent: true,
+    side: THREE.DoubleSide,
+    depthWrite: true,
+    toneMapped: true,
+    color: new THREE.Color(0xd8d8e0),
+  });
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(horizonBB.innerW, horizonBB.innerH), screenMat);
+  screen.position.set(0, screenY, 0.08);
+  screen.rotation.y = Math.PI;
+  screen.renderOrder = 20;
+  applyWorldLayer(screen, L_AVATAR);
+  grp.add(screen);
+  grp.visible = false;
+  scene.add(grp);
+  horizonBB.group = grp;
+  horizonBB.screen = screen;
+  horizonBB.glowRim = glowRim;
+  horizonBB.backPlate = backPlate;
+  horizonBB.frame = frame;
+}
+
+/** Aspect-preserving “contain” inside inner panel; resizes screen + matte/frame/glow (no texture stretch). */
+function fitHorizonBillboardPanelToMap(map) {
+  const scr = horizonBB.screen;
+  const back = horizonBB.backPlate;
+  const frame = horizonBB.frame;
+  const glow = horizonBB.glowRim;
+  if (!scr || !map) return;
+
+  const innerW = horizonBB.innerW;
+  const innerH = horizonBB.innerH;
+
+  function apply() {
+    const img = map.image;
+    const iw = img && (img.naturalWidth || img.width);
+    const ih = img && (img.naturalHeight || img.height);
+    let pw = innerW;
+    let ph = innerH;
+    if (iw > 0 && ih > 0) {
+      const ar = iw / ih;
+      const boxAR = innerW / innerH;
+      if (ar > boxAR) {
+        pw = innerW;
+        ph = innerW / ar;
+      } else {
+        ph = innerH;
+        pw = innerH * ar;
+      }
+    }
+    scr.geometry.dispose();
+    scr.geometry = new THREE.PlaneGeometry(pw, ph);
+    if (back) {
+      back.geometry.dispose();
+      back.geometry = new THREE.PlaneGeometry(pw + 1.4, ph + 1.4);
+    }
+    if (frame) {
+      frame.geometry.dispose();
+      frame.geometry = new THREE.PlaneGeometry(pw + 0.35, ph + 0.35);
+    }
+    if (glow) {
+      glow.geometry.dispose();
+      glow.geometry = new THREE.PlaneGeometry(pw + 0.22, ph + 0.22);
+    }
+  }
+
+  const img = map.image;
+  const iw0 = img && (img.naturalWidth || img.width || 0);
+  const ih0 = img && (img.naturalHeight || img.height || 0);
+  if (iw0 > 0 && ih0 > 0) {
+    apply();
+  } else if (img && typeof img.addEventListener === 'function') {
+    const onLoad = () => {
+      img.removeEventListener('load', onLoad);
+      apply();
+    };
+    img.addEventListener('load', onLoad);
+    if (img.complete) onLoad();
+  } else {
+    apply();
+  }
+}
+
+function resetHorizonBillboardFocusFx() {
+  worldSplitUniforms.wsNeonLightMul.value = WS_LIGHT_BASE.neon;
+  worldSplitUniforms.wsSunLightMul.value = WS_LIGHT_BASE.sun;
+  if (scene.fog && scene.fog.isFogExp2) scene.fog.density = SCENE_FOG_BASE_DENSITY;
+  camera.fov = C.CAM_FOV;
+  camera.updateProjectionMatrix();
+  renderer.toneMappingExposure = 0.82;
+  if (horizonBB.glowRim) horizonBB.glowRim.material.opacity = 0;
+  if (horizonBB.screen && horizonBB.screen.material.color) {
+    horizonBB.screen.material.color.setHex(0xd8d8e0);
+  }
+}
+
+function triggerHorizonBillboardRevealPulse() {
+  fx.bbPulseOn = true;
+  fx.bbPulseElapsed = 0;
+}
+
+function updateHorizonBillboardFocusFx(raw) {
+  if (!fx.bbPulseOn) return;
+  fx.bbPulseElapsed += raw;
+  const u = Math.min(fx.bbPulseElapsed / fx.bbPulseDur, 1);
+  const env = Math.sin(Math.PI * u);
+  if (u >= 1 - 1e-6) {
+    fx.bbPulseOn = false;
+    fx.bbPulseElapsed = 0;
+    resetHorizonBillboardFocusFx();
+    return;
+  }
+  const dim = 1 - env * 0.28;
+  worldSplitUniforms.wsNeonLightMul.value = WS_LIGHT_BASE.neon * dim;
+  worldSplitUniforms.wsSunLightMul.value = WS_LIGHT_BASE.sun * dim;
+  if (scene.fog && scene.fog.isFogExp2) {
+    scene.fog.density = SCENE_FOG_BASE_DENSITY * (1 + env * 0.38);
+  }
+  camera.fov = C.CAM_FOV - env * 2.75;
+  camera.updateProjectionMatrix();
+  renderer.toneMappingExposure = 0.82 - env * 0.07;
+  if (horizonBB.glowRim) {
+    horizonBB.glowRim.material.opacity = env * 0.38;
+  }
+  if (horizonBB.screen && horizonBB.screen.material.color) {
+    const b = 0.91 + env * 0.1;
+    horizonBB.screen.material.color.setRGB(b, b + 0.015, b + 0.04);
+  }
+  const avDim = 1 - env * 0.12;
+  const wDim = 1 - env * 0.24;
+  ambAI.intensity *= wDim;
+  ambReal.intensity *= wDim;
+  keyAI.intensity *= wDim;
+  rimAI.intensity *= wDim;
+  sunReal.intensity *= wDim;
+  fillReal.intensity *= wDim;
+  neonPtBlue.intensity *= wDim;
+  neonPtPurple.intensity *= wDim;
+  neonPtPink.intensity *= wDim;
+  ambAv.intensity *= avDim;
+  keyAv.intensity *= avDim;
+}
+
+/** Wait until pixels exist on `tex.image`, then run `onReady` (sync when possible so the same rAF can render the map). */
+function whenSourceTextureImageReady(tex, onReady) {
+  const drawable = () => {
+    const im = tex.image;
+    if (!im) return false;
+    const w = im.naturalWidth || im.width || im.videoWidth || 0;
+    const h = im.naturalHeight || im.height || im.videoHeight || 0;
+    if (w > 0 && h > 0) return true;
+    if (typeof im.complete === 'boolean' && !im.complete) return false;
+    return false;
+  };
+  if (drawable()) {
+    onReady();
+    return;
+  }
+  const im = tex.image;
+  if (im && typeof im.decode === 'function') {
+    im.decode()
+      .then(() => {
+        if (drawable()) onReady();
+        else schedulePoll();
+      })
+      .catch(() => schedulePoll());
+    return;
+  }
+  if (im && typeof im.addEventListener === 'function') {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      im.removeEventListener('load', finish);
+      im.removeEventListener('error', finish);
+      if (drawable()) onReady();
+      else schedulePoll();
+    };
+    im.addEventListener('load', finish);
+    im.addEventListener('error', finish);
+    if (im.complete) finish();
+    return;
+  }
+  schedulePoll();
+  function schedulePoll() {
+    let n = 0;
+    const id = setInterval(() => {
+      if (drawable()) {
+        clearInterval(id);
+        onReady();
+      } else if (++n > 480) {
+        clearInterval(id);
+        if (drawable()) onReady();
+      }
+    }, 25);
+  }
+}
+
+function setHorizonBillboardTexture(imgData) {
+  const scr = horizonBB.screen;
+  if (!scr) return;
+  horizonBB.pendingBillboardToken += 1;
+  const token = horizonBB.pendingBillboardToken;
+
+  const applyMap = () => {
+    if (token !== horizonBB.pendingBillboardToken) return;
+    const im = imgData.tex.image;
+    const w = im && (im.naturalWidth || im.width || im.videoWidth || 0);
+    const h = im && (im.naturalHeight || im.height || im.videoHeight || 0);
+    if (!im || w <= 0 || h <= 0) {
+      whenSourceTextureImageReady(imgData.tex, () => {
+        if (token !== horizonBB.pendingBillboardToken) return;
+        applyMap();
+      });
+      return;
+    }
+    const old = scr.material.map;
+    const map = new THREE.Texture(im);
+    map.wrapS = THREE.RepeatWrapping;
+    map.wrapT = THREE.ClampToEdgeWrapping;
+    map.repeat.set(-1, 1);
+    map.offset.set(1, 0);
+    map.colorSpace = THREE.SRGBColorSpace;
+    map.generateMipmaps = false;
+    map.minFilter = THREE.LinearFilter;
+    map.magFilter = THREE.LinearFilter;
+    const maxA = renderer.capabilities.getMaxAnisotropy();
+    if (maxA > 1) map.anisotropy = Math.min(4, maxA);
+    map.needsUpdate = true;
+    scr.material.map = map;
+    if (typeof renderer.initTexture === 'function') {
+      renderer.initTexture(map);
+    }
+    scr.material.opacity = 1;
+    if (scr.material.color) scr.material.color.setHex(0xd8d8e0);
+    scr.material.needsUpdate = true;
+    fitHorizonBillboardPanelToMap(map);
+    triggerHorizonBillboardRevealPulse();
+    if (old && old !== map) old.dispose();
+  };
+
+  whenSourceTextureImageReady(imgData.tex, applyMap);
+}
+
+function updateHorizonBillboard() {
+  const grp = horizonBB.group;
+  if (!grp) return;
+  const pending = gatePool.active.find(g => !g.userData.decided);
+  if (!pending || S.mode !== 'PLAYING') {
+    grp.visible = false;
+    return;
+  }
+  const pz = S.pZ + C.HORIZON_BB_AHEAD;
+  const c = worldXZFromPath(0, pz);
+  grp.position.set(c.x, 0, c.z);
+  grp.rotation.y = roadYawAtZ(pz);
+  grp.visible = true;
+}
+
+const gatePool = { pool: [], active: [] };
+function initGates() {
+  for (let i = 0; i < C.GATE_POOL; i++) gatePool.pool.push(mkGate());
+}
+function spawnGate(z, imgData) {
+  if (!imgData) return null;
+  const g = gatePool.pool.pop();
+  if (!g) return null;
+  g.visible = true;
+  g.userData.pathZ = z;
+  const c = worldXZFromPath(0, z);
+  g.position.set(c.x, 0, c.z);
+  g.rotation.y = roadYawAtZ(z);
+  g.userData.decided = false;
+  // left side (-1) = AI lane, right side (+1) = REAL lane
+  g.userData.correct = imgData.ans === 'ai' ? -1 : 1;
+  gatePool.active.push(g);
+  dom.panelImg.src = imgData.src;
+  dom.panelLabel.textContent = 'AI or REAL?';
+  dom.panelLabel.style.color = '#fff';
+
+  setHorizonBillboardTexture(imgData);
+  S.gatesSpawned++;
+  gatePathZAnchors.push({ z, ord: gateSpawnOrdinal++ });
+  return g;
+}
+function despawnGate(g) {
+  g.visible = false;
+  g.userData.pathZ = undefined;
+  const i = gatePool.active.indexOf(g);
+  if (i !== -1) gatePool.active.splice(i, 1);
+  gatePool.pool.push(g);
+}
+function updateGates() {
+  for (let i = gatePool.active.length - 1; i >= 0; i--) {
+    const pz = gatePool.active[i].userData.pathZ;
+    if (pz != null && pz < S.pZ - C.GATE_BEHIND) despawnGate(gatePool.active[i]);
+  }
+}
+function spawnIfNeeded() {
+  if (S.mode !== 'PLAYING') return;
+  if (gatePool.active.some(g => !g.userData.decided)) return;
+  if (S.targetGates > 0 && S.gatesCorrect >= S.targetGates) {
+    triggerWin();
+    return;
+  }
+  if (S.targetGates > 0 && S.gatesSpawned >= S.targetGates) return;
+  if (S.pZ + 40 > S.nextGate) {
+    const next = nextImage();
+    if (next === NEXT_IMAGE_PENDING) {
+      return;
+    }
+    if (!next) {
+      triggerWin();
+      return;
+    }
+    spawnGate(S.nextGate, next);
+    S.nextGate += 28 + Math.random() * 8;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════════════════
+const ptclTex = (() => {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 32;
+  const x = cv.getContext('2d');
+  const gr = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+  gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = gr; x.fillRect(0, 0, 32, 32);
+  return new THREE.CanvasTexture(cv);
+})();
+
+const particles = [];
+function initParticles(n = 50) {
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.SpriteMaterial({ map: ptclTex, blending: THREE.AdditiveBlending, transparent: true, opacity: 0, depthWrite: false });
+    const s = new THREE.Sprite(m);
+    s.visible = false; s.scale.setScalar(0.15);
+    s.layers.enable(L_AI);
+    s.layers.enable(L_REAL);
+    scene.add(s);
+    particles.push({ s, v: new THREE.Vector3(), life: 0, max: 0, on: false });
+  }
+}
+function emitParticles(pos, color, count = 10, spread = 1) {
+  let n = 0;
+  for (const p of particles) {
+    if (p.on || n >= count) continue;
+    p.s.position.copy(pos);
+    p.s.material.color.set(color);
+    p.s.material.opacity = 1;
+    p.s.visible = true;
+    p.v.set((Math.random() - .5) * spread * 3, Math.random() * spread * 2 + 1, (Math.random() - .5) * spread * 3);
+    p.life = 0; p.max = .4 + Math.random() * .4; p.on = true;
+    n++;
+  }
+}
+function updateParticles(dt) {
+  for (const p of particles) {
+    if (!p.on) continue;
+    p.life += dt;
+    if (p.life >= p.max) { p.on = false; p.s.visible = false; continue; }
+    p.s.position.addScaledVector(p.v, dt);
+    p.v.y -= 3 * dt;
+    p.s.material.opacity = 1 - p.life / p.max;
+  }
+}
+
+// ── Lane trail: additive neon on AI side (x < 0), soft dust on REAL side (x > 0)
+const vehicleTrail = [];
+let vehicleTrailSpawnAcc = 0;
+const _trailLocal = new THREE.Vector3();
+const _trailFwd = new THREE.Vector3();
+const NEON_TRAIL_HEX = [0x00ffff, 0xff55ee, 0x66ddff, 0xff00cc, 0x99ffee];
+
+function initVehicleTrail(n = 56) {
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.SpriteMaterial({
+      map: ptclTex,
+      blending: THREE.AdditiveBlending,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      toneMapped: true,
+    });
+    const s = new THREE.Sprite(m);
+    s.visible = false;
+    s.scale.setScalar(0.14);
+    s.layers.set(L_AI);
+    s.layers.enable(L_BLOOM);
+    scene.add(s);
+    vehicleTrail.push({ s, v: new THREE.Vector3(), life: 0, max: 0, on: false, kind: 'neon' });
+  }
+}
+
+function resetVehicleTrail() {
+  vehicleTrailSpawnAcc = 0;
+  for (const p of vehicleTrail) {
+    p.on = false;
+    p.s.visible = false;
+  }
+}
+
+function emitOneVehicleTrail(kind) {
+  for (const p of vehicleTrail) {
+    if (p.on) continue;
+    p.kind = kind;
+    _trailLocal.set((Math.random() - 0.5) * 0.44, 0.05 + Math.random() * 0.1, -(0.5 + Math.random() * 0.22));
+    _trailLocal.applyMatrix4(playerGroup.matrixWorld);
+    p.s.position.copy(_trailLocal);
+
+    _trailFwd.set(0, 0, 1);
+    _trailFwd.transformDirection(playerGroup.matrixWorld);
+    const spd = 1.9 + Math.random() * 3.4;
+    p.v.copy(_trailFwd).multiplyScalar(-spd);
+    p.v.x += (Math.random() - 0.5) * 1.05;
+    p.v.y += kind === 'neon' ? 0.45 + Math.random() * 1.05 : 0.12 + Math.random() * 0.42;
+    p.v.z += (Math.random() - 0.5) * 0.85;
+
+    const mat = p.s.material;
+    if (kind === 'neon') {
+      mat.blending = THREE.AdditiveBlending;
+      mat.color.setHex(NEON_TRAIL_HEX[(Math.random() * NEON_TRAIL_HEX.length) | 0]);
+      mat.opacity = 1;
+      p.s.layers.set(L_AI);
+      p.s.layers.enable(L_BLOOM);
+      p.s.scale.setScalar(0.09 + Math.random() * 0.07);
+    } else {
+      mat.blending = THREE.NormalBlending;
+      mat.color.setRGB(0.74 + Math.random() * 0.08, 0.63 + Math.random() * 0.09, 0.5 + Math.random() * 0.08);
+      mat.opacity = 0.82;
+      p.s.layers.set(L_REAL);
+      p.s.scale.setScalar(0.17 + Math.random() * 0.11);
+    }
+    p.life = 0;
+    p.max = kind === 'neon' ? 0.3 + Math.random() * 0.16 : 0.42 + Math.random() * 0.32;
+    p.on = true;
+    p.s.visible = true;
+    return;
+  }
+}
+
+function spawnVehicleTrail(dt) {
+  if (S.mode !== 'PLAYING') return;
+  const neon = S.curX < -0.03;
+  const dust = S.curX > 0.03;
+  if (!neon && !dust) return;
+  const kind = neon ? 'neon' : 'dust';
+  const rate = (neon ? 40 : 30) * (S.speed / C.FWD_SPEED);
+  vehicleTrailSpawnAcc += rate * dt;
+  while (vehicleTrailSpawnAcc >= 1) {
+    vehicleTrailSpawnAcc -= 1;
+    emitOneVehicleTrail(kind);
+  }
+}
+
+function updateVehicleTrail(dt) {
+  if (S.mode !== 'PLAYING' && S.mode !== 'PAUSED') {
+    for (const p of vehicleTrail) {
+      if (p.on) {
+        p.on = false;
+        p.s.visible = false;
+      }
+    }
+    return;
+  }
+  for (const p of vehicleTrail) {
+    if (!p.on) continue;
+    p.life += dt;
+    if (p.life >= p.max) {
+      p.on = false;
+      p.s.visible = false;
+      continue;
+    }
+    p.s.position.addScaledVector(p.v, dt);
+    const u = p.life / p.max;
+    if (p.kind === 'dust') {
+      p.v.y -= 2.2 * dt;
+      p.v.multiplyScalar(Math.max(0.88, 1 - 0.45 * dt));
+      p.s.material.opacity = (1 - u) * 0.88;
+    } else {
+      p.v.y += 0.5 * dt;
+      p.v.multiplyScalar(Math.max(0.86, 1 - 0.65 * dt));
+      p.s.material.opacity = 1 - u;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// ROAD OBSTACLES (two lanes per row — four lanes always clear)
+// ═══════════════════════════════════════════════════════
+const obGeo = new THREE.BoxGeometry(0.5, 0.32, 0.7);
+/** Deadly hazard — contact ends the run. */
+const obMatRed = new THREE.MeshStandardMaterial({
+  color: 0xcc1020, emissive: 0x440008, emissiveIntensity: 0.55,
+  roughness: 0.35, metalness: 0.25,
+});
+const laserDoorBarGeo = new THREE.BoxGeometry(0.1, 0.54, 0.12);
+const laserDoorBarMat = new THREE.MeshStandardMaterial({
+  color: 0x080808, roughness: 0.45, metalness: 0.35,
+  emissive: 0x000000,
+});
+const laserDoorBeamMat = new THREE.MeshStandardMaterial({
+  color: 0xff2a6a,
+  emissive: 0xff0066,
+  emissiveIntensity: 2.35,
+  roughness: 0.18, metalness: 0.2,
+});
+const obstacleRows = [];
+
+/** Deadly real-side obstacle: scaled `hurdle.glb` with base on the road; fallback is red box. */
+function makeRealSideDeadlyObstacleMesh() {
+  const proto = envProtos.hurdle;
+  if (!proto) {
+    const m = new THREE.Mesh(obGeo, obMatRed);
+    m.userData.obstacleGroundY = 0.16;
+    return m;
+  }
+  let skinned = false;
+  proto.traverse((o) => { if (o.isSkinnedMesh) skinned = true; });
+  const root = skinned ? SkeletonUtils.clone(proto) : proto.clone(true);
+  root.traverse((ch) => {
+    if (ch.isMesh) {
+      ch.castShadow = true;
+      ch.receiveShadow = true;
+    }
+  });
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(root);
+  const w = Math.max(box.max.x - box.min.x, box.max.z - box.min.z, 1e-3);
+  const scale = (0.62 / w) * 2.5;
+  root.scale.setScalar(scale);
+  root.updateMatrixWorld(true);
+  const box2 = new THREE.Box3().setFromObject(root);
+  root.position.y = -box2.min.y;
+  root.updateMatrixWorld(true);
+  root.userData.obstacleGroundY = 0;
+  return root;
+}
+
+/** Deadly AI-side obstacle: two black posts with an emissive horizontal laser between them. */
+function makeNeonLaserDoorObstacleMesh() {
+  const g = new THREE.Group();
+  const left = new THREE.Mesh(laserDoorBarGeo, laserDoorBarMat);
+  left.position.set(-0.32, 0.27, 0);
+  const right = new THREE.Mesh(laserDoorBarGeo, laserDoorBarMat);
+  right.position.set(0.32, 0.27, 0);
+  const beam = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.038, 0.045), laserDoorBeamMat);
+  beam.position.set(0, 0.27, 0);
+  beam.userData.obstacleLaserBeam = true;
+  g.add(left, right, beam);
+  return g;
+}
+
+/** Stylized portal rings (reward = coin + boost); full stencil portal would match [webgl_portal](https://threejs.org/examples/webgl_portal.html). */
+const portals = [];
+
+const boostPickups = [];
+const coinPickups = [];
+const boostGeo = new THREE.OctahedronGeometry(0.24, 0);
+const boostMat = new THREE.MeshStandardMaterial({
+  color: 0x44ffdd,
+  emissive: 0x113322,
+  emissiveIntensity: 0.85,
+  roughness: 0.28,
+  metalness: 0.35,
+});
+
+function nearestLaneResolved(x) {
+  let best = 0, bd = 1e9;
+  for (let i = 0; i < C.LANES.length; i++) {
+    const d = Math.abs(x - C.LANES[i]);
+    if (d < bd) { bd = d; best = i; }
+  }
+  return bd < 0.48 ? best : -1;
+}
+
+function pickTwoObstacleLanes() {
+  const a = Math.floor(Math.random() * 6);
+  let b = Math.floor(Math.random() * 6);
+  while (b === a) b = Math.floor(Math.random() * 6);
+  return [a, b];
+}
+
+/** True if path Z would put an obstacle row inside an image-gate label zone or too near a ring portal. */
+function obstacleSpawnZConflicts(z) {
+  const gb = C.OBSTACLE_GATE_Z_BACK;
+  const gf = C.OBSTACLE_GATE_Z_FORWARD;
+  for (const g of gatePool.active) {
+    const gz = g.userData.pathZ;
+    if (gz == null) continue;
+    if (z >= gz - gb && z <= gz + gf) return true;
+  }
+  if (z >= S.nextGate - gb && z <= S.nextGate + gf) return true;
+  const pc = C.OBSTACLE_PORTAL_Z_CLEAR;
+  for (const p of portals) {
+    if (Math.abs(z - p.z) < pc) return true;
+  }
+  if (Math.abs(z - S.nextPortalZ) < pc) return true;
+  return false;
+}
+
+function resolveObstacleSpawnZ(z) {
+  let zz = z;
+  let n = 0;
+  const max = 48;
+  while (obstacleSpawnZConflicts(zz) && n < max) {
+    zz += C.OBSTACLE_Z_RESOLVE_STEP;
+    n++;
+  }
+  return zz;
+}
+
+function spawnObstacleRow(zWorld) {
+  const lanes = pickTwoObstacleLanes();
+  const deadly = [true, true];
+  const grp = new THREE.Group();
+  const c = worldXZFromPath(0, zWorld);
+  grp.position.set(c.x, 0, c.z);
+  grp.rotation.y = roadYawAtZ(zWorld);
+  for (let i = 0; i < 2; i++) {
+    const ln = lanes[i];
+    const onAi = ln < 3;
+    let m;
+    if (onAi) {
+      m = makeNeonLaserDoorObstacleMesh();
+      m.position.set(C.LANES[ln], 0, 0);
+      applyWorldLayer(m, L_AI);
+      m.traverse((o) => {
+        if (o.isMesh && o.userData.obstacleLaserBeam) o.layers.enable(L_BLOOM);
+      });
+    } else {
+      m = makeRealSideDeadlyObstacleMesh();
+      m.position.set(C.LANES[ln], m.userData.obstacleGroundY ?? 0.16, 0);
+      applyWorldLayer(m, L_REAL);
+    }
+    grp.add(m);
+  }
+  scene.add(grp);
+  obstacleRows.push({ grp, z: zWorld, lanes, hit: [false, false], deadly });
+}
+
+function updateObstacles() {
+  if (S.mode !== 'PLAYING') return;
+  while (S.pZ + 58 > S.nextObstacleZ) {
+    const zSpawn = resolveObstacleSpawnZ(S.nextObstacleZ);
+    spawnObstacleRow(zSpawn);
+    S.nextObstacleZ = zSpawn + C.OBSTACLE_INTERVAL + Math.random() * 10;
+  }
+  const pz = S.pZ;
+  const lane = nearestLaneResolved(S.curX);
+  if (lane >= 0) {
+    for (const row of obstacleRows) {
+      if (pz < row.z - 0.45 || pz > row.z + 0.5) continue;
+      for (let i = 0; i < 2; i++) {
+        if (row.hit[i] || row.lanes[i] !== lane) continue;
+        row.hit[i] = true;
+        const isDeadly = Array.isArray(row.deadly) ? row.deadly[i] : true;
+        if (isDeadly) {
+          sfx.hurt();
+          shakeScreen(0.1, 0.32);
+          flashScreen('#EF476F', 0.2);
+          fx.obstacleBloomPeakActive = 0.58;
+          fx.obstacleBloomT = fx.obstacleBloomDur;
+          showFloat('CRASH!', '#EF476F', '50%', '36%');
+          setTimeout(() => triggerLose(), 120);
+        } else {
+          sfx.nearMiss();
+          shakeScreen(0.04, 0.14);
+          fx.obstacleBloomPeakActive = 0.4;
+          fx.obstacleBloomT = fx.obstacleBloomDur * 0.85;
+          showFloat('BUMP', '#66ddff', '50%', '38%');
+          emitParticles(playerGroup.position.clone().add(new THREE.Vector3(0, 0.12, 0)), 0x66ccff, 8, 0.35);
+          updateBloomIntensity();
+        }
+      }
+    }
+  }
+  for (let i = obstacleRows.length - 1; i >= 0; i--) {
+    if (obstacleRows[i].z < pz - 14) {
+      scene.remove(obstacleRows[i].grp);
+      obstacleRows.splice(i, 1);
+    }
+  }
+}
+
+function spawnBoostPickup(zWorld) {
+  const lane = Math.floor(Math.random() * C.LANES.length);
+  const grp = new THREE.Group();
+  const c = worldXZFromPath(0, zWorld);
+  grp.position.set(c.x, 0, c.z);
+  grp.rotation.y = roadYawAtZ(zWorld);
+  const m = new THREE.Mesh(boostGeo, boostMat);
+  m.position.set(C.LANES[lane], 0.38, 0);
+  m.rotation.y = Math.PI / 4;
+  m.userData.spin = 2.2 + Math.random() * 0.8;
+  applyWorldLayer(m, lane < 3 ? L_AI : L_REAL);
+  grp.add(m);
+  scene.add(grp);
+  boostPickups.push({ grp, z: zWorld, lane, hit: false });
+}
+
+function updateBoostPickups(dt) {
+  if (S.mode !== 'PLAYING') return;
+  while (S.pZ + 58 > S.nextBoostZ) {
+    spawnBoostPickup(S.nextBoostZ);
+    S.nextBoostZ += C.BOOST_INTERVAL + Math.random() * 14;
+  }
+  const pz = S.pZ;
+  const lane = nearestLaneResolved(S.curX);
+  for (const pk of boostPickups) {
+    if (pk.hit) continue;
+    const mesh = pk.grp.children[0];
+    if (mesh) mesh.rotation.y += dt * (mesh.userData.spin || 2);
+    if (lane < 0) continue;
+    if (pz < pk.z - 0.5 || pz > pk.z + 0.55) continue;
+    if (pk.lane !== lane) continue;
+    pk.hit = true;
+    pk.grp.visible = false;
+    if (S.boostCharges < C.BOOST_MAX_CHARGES) {
+      S.boostCharges++;
+      sfx.boostPickup();
+      showFloat('+⚡ BOOST', '#66ffee', '50%', '58%');
+    } else {
+      showFloat('BOOST FULL', '#88ccbb', '50%', '58%');
+    }
+    updateBoostHUD();
+  }
+  for (let i = boostPickups.length - 1; i >= 0; i--) {
+    if (boostPickups[i].z < pz - 14) {
+      scene.remove(boostPickups[i].grp);
+      boostPickups.splice(i, 1);
+    }
+  }
+}
+
+const coinGeo = new THREE.TorusGeometry(0.2, 0.055, 10, 24);
+const coinMat = new THREE.MeshStandardMaterial({
+  color: 0xffcc44,
+  emissive: 0x332200,
+  emissiveIntensity: 0.22,
+  roughness: 0.35,
+  metalness: 0.55,
+});
+
+function spawnCoinPickup(zWorld) {
+  const lane = Math.floor(Math.random() * C.LANES.length);
+  const grp = new THREE.Group();
+  const c = worldXZFromPath(0, zWorld);
+  grp.position.set(c.x, 0, c.z);
+  grp.rotation.y = roadYawAtZ(zWorld);
+  const m = new THREE.Mesh(coinGeo, coinMat);
+  m.position.set(C.LANES[lane], 0.42, 0);
+  // Torus in XZ plane: coin “on edge” above the road, spin around world-up (local Y).
+  m.rotation.x = Math.PI / 2;
+  m.userData.spin = 4.0 + Math.random() * 1.8;
+  applyWorldLayer(m, lane < 3 ? L_AI : L_REAL);
+  grp.add(m);
+  scene.add(grp);
+  coinPickups.push({ grp, z: zWorld, lane, hit: false });
+}
+
+function updateCoinPickups(dt) {
+  if (S.mode !== 'PLAYING') return;
+  while (S.pZ + 58 > S.nextCoinZ) {
+    spawnCoinPickup(S.nextCoinZ);
+    S.nextCoinZ += C.COIN_INTERVAL + Math.random() * 12;
+  }
+  const pz = S.pZ;
+  const lane = nearestLaneResolved(S.curX);
+  for (const pk of coinPickups) {
+    if (pk.hit) continue;
+    const mesh = pk.grp.children[0];
+    if (mesh) {
+      mesh.rotation.y += dt * (mesh.userData.spin || 4);
+    }
+    if (lane < 0) continue;
+    if (pz < pk.z - 0.5 || pz > pk.z + 0.55) continue;
+    if (pk.lane !== lane) continue;
+    pk.hit = true;
+    pk.grp.visible = false;
+    S.coins += C.COIN_VALUE;
+    sfx.boostPickup();
+    showFloat(`+${C.COIN_VALUE}`, '#FFD166', '50%', '52%');
+    emitParticles(playerGroup.position.clone().add(new THREE.Vector3(0, 0.35, 0)), 0xffcc33, 14, 0.6);
+    updateHUD();
+    updateBloomIntensity();
+  }
+  for (let i = coinPickups.length - 1; i >= 0; i--) {
+    if (coinPickups[i].z < pz - 14) {
+      scene.remove(coinPickups[i].grp);
+      coinPickups.splice(i, 1);
+    }
+  }
+}
+
+function buildPortalPlane(radius, ringColor, coreColor) {
+  const g = new THREE.Group();
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(radius * 0.76, radius, 48),
+    new THREE.MeshStandardMaterial({
+      color: ringColor,
+      emissive: ringColor,
+      emissiveIntensity: 0.58,
+      metalness: 0.45,
+      roughness: 0.22,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    }),
+  );
+  const core = new THREE.Mesh(
+    new THREE.CircleGeometry(radius * 0.74, 48),
+    new THREE.MeshBasicMaterial({
+      color: coreColor,
+      transparent: true,
+      opacity: 0.26,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  );
+  g.add(core);
+  g.add(ring);
+  return g;
+}
+
+function createPortalMover(kind) {
+  if (kind === 'coin') {
+    const m = new THREE.Mesh(coinGeo, coinMat.clone());
+    m.rotation.x = Math.PI / 2;
+    return m;
+  }
+  const m = new THREE.Mesh(boostGeo, boostMat.clone());
+  m.rotation.y = Math.PI / 4;
+  return m;
+}
+
+function spawnPortal(zWorld) {
+  const grp = new THREE.Group();
+  const c = worldXZFromPath(0, zWorld);
+  grp.position.set(c.x, 0, c.z);
+  grp.rotation.y = roadYawAtZ(zWorld);
+
+  const span = 6.2;
+  const y = 1.05;
+  const left = buildPortalPlane(1.25, 0x7b49ff, 0x1e1144);
+  left.position.set(-span * 0.5, y, 0);
+  left.rotation.y = Math.PI / 2;
+  const right = buildPortalPlane(1.25, 0x31e6ff, 0x09243a);
+  right.position.set(span * 0.5, y, 0);
+  right.rotation.y = -Math.PI / 2;
+  grp.add(left);
+  grp.add(right);
+
+  const movers = [];
+  const mCoin = createPortalMover('coin');
+  const mBoost = createPortalMover('boost');
+  movers.push({ mesh: mCoin, phase: 0, kind: 'coin', hit: false });
+  movers.push({ mesh: mBoost, phase: Math.PI, kind: 'boost', hit: false });
+  for (const mv of movers) grp.add(mv.mesh);
+
+  enableDualWorldLayer(grp);
+  scene.add(grp);
+  portals.push({
+    grp,
+    z: zWorld,
+    span,
+    y,
+    phase: Math.random() * Math.PI * 2,
+    movers,
+  });
+}
+
+function updatePortals(dt) {
+  if (S.mode !== 'PLAYING') return;
+  while (S.pZ + 62 > S.nextPortalZ) {
+    spawnPortal(S.nextPortalZ);
+    S.nextPortalZ += C.PORTAL_INTERVAL + Math.random() * 16;
+  }
+  const pz = S.pZ;
+  const playerPos = playerGroup.position;
+  const portalMoverWorldPos = new THREE.Vector3();
+  for (const p of portals) {
+    const breath = 1 + 0.035 * Math.sin(S.elapsed * 2 + p.phase);
+    p.grp.scale.set(breath, breath, breath);
+    const loopW = 1.65;
+    const loopH = 0.82;
+    const baseY = p.y;
+    let i = 0;
+    for (const mv of p.movers) {
+      if (mv.hit) continue;
+      mv.phase += dt * (1.35 + i * 0.15);
+      const t = mv.phase;
+      // Two-plane portal loop: movers travel left<->right and arc around, crossing each portal plane each cycle.
+      const x = Math.cos(t) * (p.span * 0.5);
+      const z = Math.sin(t) * loopW;
+      const y = baseY + Math.sin(t * 2) * loopH;
+      mv.mesh.position.set(x, y, z);
+      mv.mesh.rotation.y += dt * (mv.kind === 'coin' ? 5.2 : 2.4);
+      mv.mesh.getWorldPosition(portalMoverWorldPos);
+      const nearX = Math.abs(portalMoverWorldPos.x - playerPos.x) < 0.56;
+      const nearY = Math.abs(portalMoverWorldPos.y - playerPos.y) < 0.9;
+      const nearZ = Math.abs(portalMoverWorldPos.z - playerPos.z) < 0.72;
+      if (nearX && nearY && nearZ) {
+        mv.hit = true;
+        mv.mesh.visible = false;
+        if (mv.kind === 'coin') {
+          S.coins += C.COIN_VALUE;
+          sfx.boostPickup();
+          showFloat(`+${C.COIN_VALUE}`, '#FFD166', '50%', '52%');
+          emitParticles(playerPos.clone().add(new THREE.Vector3(0, 0.35, 0)), 0xffcc33, 14, 0.6);
+          updateHUD();
+          updateBloomIntensity();
+        } else {
+          if (S.boostCharges < C.BOOST_MAX_CHARGES) {
+            S.boostCharges++;
+            sfx.boostPickup();
+            showFloat('+⚡ BOOST', '#66ffee', '50%', '58%');
+          } else {
+            showFloat('BOOST FULL', '#88ccbb', '50%', '58%');
+          }
+          updateBoostHUD();
+        }
+      }
+      i++;
+    }
+  }
+  for (let i = portals.length - 1; i >= 0; i--) {
+    if (portals[i].z < pz - 24) {
+      scene.remove(portals[i].grp);
+      portals.splice(i, 1);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EFFECTS
+// ═══════════════════════════════════════════════════════
+function shakeScreen(intensity, dur) { fx.shakeI = intensity; fx.shakeT = dur; }
+function updateShake(dt) {
+  if (fx.shakeT > 0) {
+    fx.shakeT -= dt;
+    const d = Math.max(fx.shakeT / 0.28, 0);
+    camera.position.x += (Math.random() - .5) * fx.shakeI * d;
+    camera.position.y += (Math.random() - .5) * fx.shakeI * d;
+  }
+}
+
+function flashScreen(color, dur) {
+  dom.flash.style.backgroundColor = color;
+  dom.flash.style.opacity = '0.25';
+  setTimeout(() => { dom.flash.style.opacity = '0'; }, dur * 1000);
+}
+
+function zoomPulse() {
+  camera.fov = 56;
+  camera.updateProjectionMatrix();
+  const start = performance.now();
+  (function tick() {
+    const t = Math.min((performance.now() - start) / 180, 1);
+    camera.fov = 56 + (60 - 56) * t;
+    camera.updateProjectionMatrix();
+    if (t < 1) requestAnimationFrame(tick);
+  })();
+}
+
+function squashStretch() {
+  playerGroup.scale.set(1.05, 0.95, 1.05);
+  const start = performance.now();
+  (function tick() {
+    const t = Math.min((performance.now() - start) / 220, 1);
+    const e = 1 - Math.pow(1 - t, 3);
+    playerGroup.scale.set(1 + .05 * (1 - e), .95 + .05 * e, 1 + .05 * (1 - e));
+    if (t < 1) requestAnimationFrame(tick);
+  })();
+}
+
+function triggerSlowMo(factor, hold, ramp) {
+  S.tScale = factor;
+  setTimeout(() => {
+    const start = performance.now();
+    const ms = ramp * 1000;
+    (function r() {
+      const t = Math.min((performance.now() - start) / ms, 1);
+      S.tScale = factor + (1 - factor) * t;
+      if (t < 1) requestAnimationFrame(r);
+    })();
+  }, hold * 1000);
+}
+
+function bloomScoreRamp() {
+  return Math.min(S.coins * 0.0012 + S.gatesCorrect * 0.004, 0.12);
+}
+
+function updateBloomIntensity() {
+  let hitBoost = 0;
+  if (fx.obstacleBloomT > 0 && fx.obstacleBloomDur > 1e-6) {
+    const k = fx.obstacleBloomT / fx.obstacleBloomDur;
+    hitBoost = fx.obstacleBloomPeakActive * k * k;
+  }
+  let bbBoost = 0;
+  if (fx.bbPulseOn) {
+    const u = Math.min(fx.bbPulseElapsed / fx.bbPulseDur, 1);
+    bbBoost = Math.sin(Math.PI * u) * (isMobile ? 0.08 : 0.14);
+  }
+  bloomPass.strength = Math.min(2.05, fx.bloomBase + bloomScoreRamp() + hitBoost + bbBoost);
+}
+
+function showFloat(text, color, xPct = '50%', yPct = '35%') {
+  const el = document.createElement('div');
+  el.className = 'ft';
+  el.textContent = text;
+  el.style.color = color;
+  el.style.left = xPct;
+  el.style.top = yPct;
+  dom.floats.appendChild(el);
+  setTimeout(() => el.remove(), 800);
+}
+
+// ═══════════════════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════════════════
+// dir: -1 = move one lane left, +1 = move one lane right
+function tryActivateBoost() {
+  if (S.mode !== 'PLAYING') return;
+  if (S.boostCharges <= 0) return;
+  if (S.boostT > 0) return;
+  S.boostCharges--;
+  S.boostT = C.BOOST_DURATION;
+  sfx.boostUse();
+  emitParticles(playerGroup.position.clone().add(new THREE.Vector3(0, 0.2, 0.4)), 0x66ffee, 10, 0.5);
+  updateBoostHUD();
+}
+
+function setLane(dir) {
+  if (S.mode !== 'PLAYING' || S.locked) return;
+  const next = S.lane + dir;
+  const atBoundary = next < 0 || next >= C.LANES.length;
+  if (atBoundary) {
+    // Already at the edge — show denied feedback on that side
+    sfx.denied();
+    const hint = dir < 0 ? dom.hl : dom.hr;
+    hint.classList.remove('hint-denied');
+    void hint.offsetWidth;
+    hint.classList.add('hint-denied');
+    return;
+  }
+  S.lane = next;
+  sfx.lane();
+  S.tgtX = C.LANES[next];
+  S.locked = true;
+  S.lastSwitch = performance.now();
+  setTimeout(() => { S.locked = false; }, C.LOCK_MS);
+  const hint = dir < 0 ? dom.hl : dom.hr;
+  hint.classList.remove('hint-flash');
+  void hint.offsetWidth;
+  hint.classList.add('hint-flash');
+}
+
+window.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  const k = e.code;
+  if (S.mode === 'PLAYING') {
+    if (k === 'ArrowLeft' || k === 'KeyA') { setLane(-1); e.preventDefault(); }
+    else if (k === 'ArrowRight' || k === 'KeyD') { setLane(1); e.preventDefault(); }
+    else if (k === 'KeyW') { tryActivateBoost(); e.preventDefault(); }
+    else if (k === 'KeyS') { tryActivateDroneShot(); e.preventDefault(); }
+    else if (k === 'Escape' || k === 'KeyP') togglePause();
+  } else if (S.mode === 'MENU') {
+    if (k === 'Enter' || k === 'Space') startGame();
+  } else if (S.mode === 'GAME_OVER') {
+    if (k === 'Enter' || k === 'Space') startGame();
+  } else if (S.mode === 'PAUSED') {
+    if (k === 'Escape' || k === 'KeyP' || k === 'Enter') resumeGame();
+  }
+});
+
+container.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const t = e.touches[0];
+  const r = container.getBoundingClientRect();
+  // Match mirrored canvas (scaleX): physical tap ↔ framebuffer lane
+  const xr = 1 - (t.clientX - r.left) / r.width;
+  if (S.mode === 'PLAYING') {
+    if (xr < 0.4) setLane(-1);
+    else if (xr > 0.6) setLane(1);
+    else togglePause();
+  } else if (S.mode === 'MENU') startGame();
+  else if (S.mode === 'GAME_OVER') startGame();
+  else if (S.mode === 'PAUSED') resumeGame();
+}, { passive: false });
+
+// ═══════════════════════════════════════════════════════
+// DECISION LOGIC
+// ═══════════════════════════════════════════════════════
+function checkDecisions() {
+  for (const g of gatePool.active) {
+    if (g.userData.decided) continue;
+    const gz = g.userData.pathZ != null ? g.userData.pathZ : g.position.z;
+    if (S.pZ >= gz + C.GATE_DEC) {
+      g.userData.decided = true;
+      // Any lane left of centre = AI side; any lane right of centre = REAL side
+      const inLeft = S.curX < 0;
+      const inRight = S.curX > 0;
+      const forcedCorrect = g.userData.droneAutoCorrect === true;
+      const correct = forcedCorrect || ((inLeft && g.userData.correct === -1) || (inRight && g.userData.correct === 1));
+      const nearMiss = performance.now() - S.lastSwitch < C.NEAR_MS;
+      if (correct) {
+        dom.panelLabel.textContent = '✓ CORRECT';
+        dom.panelLabel.style.color = '#06D6A0';
+      } else {
+        dom.panelLabel.textContent = '✗ WRONG';
+        dom.panelLabel.style.color = '#EF476F';
+      }
+      if (correct) onCorrect(nearMiss);
+      else onWrong();
+    }
+  }
+}
+
+function onCorrect(nearMiss) {
+  sfx.correct();
+  S.gatesCorrect++;
+  S.coins += C.GATE_COIN_BONUS;
+  S.sprintT = Math.max(S.sprintT, 0.3);
+
+  squashStretch();
+  zoomPulse();
+  showFloat(`+${C.GATE_COIN_BONUS}`, '#06D6A0');
+  emitParticles(playerGroup.position.clone().add(new THREE.Vector3(0, .5, 0)), COL.OK, 12, 0.8);
+  updateBloomIntensity();
+  updateHUD();
+
+  if (nearMiss) {
+    sfx.nearMiss();
+    triggerSlowMo(0.6, 0.14, 0.3);
+    showFloat('CLOSE!', '#FFD166', '50%', '45%');
+    emitParticles(playerGroup.position.clone().add(new THREE.Vector3(0, .3, 0)), COL.LIGHT, 15, 1.2);
+  }
+  if (S.targetGates > 0 && S.gatesCorrect >= S.targetGates) {
+    setTimeout(() => triggerWin(), 120);
+  }
+}
+
+function onWrong() {
+  if (S.mode !== 'PLAYING') return;
+  shakeScreen(0.12, 0.35);
+  flashScreen('#EF476F', 0.28);
+  showFloat('WRONG', '#EF476F', '50%', '40%');
+  setTimeout(() => triggerLose(), 280);
+}
+
+// ═══════════════════════════════════════════════════════
+// UI / STATE
+// ═══════════════════════════════════════════════════════
+function setMode(m) {
+  S.mode = m;
+  dom.hud.classList.toggle('hidden', m !== 'PLAYING');
+  dom.menu.classList.toggle('hidden', m !== 'MENU');
+  dom.pause.classList.toggle('hidden', m !== 'PAUSED');
+  dom.go.classList.toggle('hidden', m !== 'GAME_OVER');
+  if (m === 'PAUSED' || m === 'GAME_OVER' || m === 'MENU') bgmPause();
+  if (m !== 'PLAYING') {
+    updateBoostHUD();
+    updateRunTimerHUD();
+  }
+}
+
+function updateHUD() {
+  dom.hp.textContent = S.droneFireReady
+    ? 'CLEAR ALL CHALLENGES · Press S to use drone'
+    : 'CLEAR ALL CHALLENGES · one mistake ends the run';
+  const gatePart = S.targetGates > 0
+    ? `${S.gatesCorrect}/${S.targetGates}`
+    : `${S.gatesCorrect}`;
+  dom.sc.textContent = `Coins: ${S.coins} · Gates: ${gatePart}`;
+}
+
+function updateBoostHUD() {
+  if (S.mode !== 'PLAYING') {
+    dom.boostHud.classList.add('hidden');
+    return;
+  }
+  const active = S.boostT > 0;
+  const ch = S.boostCharges;
+  if (!active && ch <= 0) {
+    dom.boostHud.classList.add('hidden');
+    dom.boostL1.textContent = '';
+    dom.boostL2.textContent = '';
+    return;
+  }
+  dom.boostHud.classList.remove('hidden');
+  if (active) {
+    dom.boostL1.textContent = `⚡ ${S.boostT.toFixed(1)}s`;
+    dom.boostL2.textContent = ch > 0 ? `stored ×${ch} · W` : 'speed boost';
+  } else {
+    dom.boostL1.textContent = `×${ch} boost`;
+    dom.boostL2.textContent = 'Press W to use';
+  }
+}
+
+function updateRunTimerHUD() {
+  if (S.mode !== 'PLAYING') {
+    dom.timerHud.classList.add('hidden');
+    return;
+  }
+  dom.timerHud.classList.remove('hidden');
+  dom.timerHud.textContent = `${S.runTime.toFixed(3)}s`;
+}
+
+function updateBestDisplay() {
+  dom.mb.textContent = S.best > 0 ? `BEST COINS: ${S.best}` : '';
+}
+
+function saveBest() {
+  if (S.coins > S.best) {
+    S.best = S.coins;
+    localStorage.setItem('AI_Race_v1_best_coins', String(S.best));
+  }
+}
+
+function startGame() {
+  sfx.ensure();
+  sfx.startRun();
+  bgmPlayFromStart();
+  S.coins = 0;
+  S.gatesCorrect = 0;
+  S.gatesSpawned = 0;
+  S.pZ = 0;
+  S.lane = C.LANE_START;
+  S.tgtX = C.LANES[C.LANE_START];
+  S.curX = C.LANES[C.LANE_START];
+  S.speed = C.FWD_SPEED; S.tScale = 1; S.locked = false;
+  S.sprintT = 0;
+  S.boostT = 0;
+  S.boostCharges = 0;
+  S.runTime = 0;
+  S.nextBoostZ = C.BOOST_FIRST_Z;
+  S.nextGate = C.GATE_DIST;
+  gatePathZAnchors.length = 0;
+  gateSpawnOrdinal = 0;
+  S.nextObstacleZ = C.OBSTACLE_FIRST_Z;
+  S.nextPortalZ = C.PORTAL_FIRST_Z;
+  S.nextCoinZ = C.COIN_FIRST_Z;
+  S.elapsed = 0; S.result = null;
+  S.npPaper10 = false;
+  S.npPaper40 = false;
+  S.dronePicked = false;
+  S.droneFireReady = false;
+  S.droneConsumed = false;
+  droneBeamT = 0;
+  if (droneBeam.mesh) droneBeam.mesh.visible = false;
+  clearNewspaperMeshes();
+  refreshRoundImages();
+  dom.imgPanel.classList.add('hidden');
+
+  for (let i = 0; i < roadTiles.length; i++) {
+    roadTiles[i].position.z = i * C.TILE_LEN;
+    populateTile(roadTiles[i], roadTiles[i].position.z);
+  }
+  while (gatePool.active.length) despawnGate(gatePool.active[0]);
+  while (obstacleRows.length) {
+    scene.remove(obstacleRows.pop().grp);
+  }
+  while (boostPickups.length) {
+    scene.remove(boostPickups.pop().grp);
+  }
+  while (coinPickups.length) {
+    scene.remove(coinPickups.pop().grp);
+  }
+  while (portals.length) {
+    scene.remove(portals.pop().grp);
+  }
+  resetVehicleTrail();
+
+  const pw = worldXZFromPath(C.LANES[C.LANE_START], 0);
+  playerGroup.position.set(pw.x, C.VEH_Y, pw.z);
+  playerGroup.scale.set(1, 1, 1);
+  playerGroup.visible = true;
+  playerGroup.rotation.y = roadYawAtZ(0);
+  playerGroup.rotation.z = 0;
+  canvas.style.filter = '';
+
+  fx.bbPulseOn = false;
+  fx.bbPulseElapsed = 0;
+  resetHorizonBillboardFocusFx();
+  camera.fov = C.CAM_FOV;
+  camera.updateProjectionMatrix();
+  const cw = worldXZFromPath(0, C.CAM_ZOFF);
+  const lk = worldXZFromPath(0, C.CAM_LOOK);
+  camera.position.set(cw.x, C.CAM_Y, cw.z);
+  camera.lookAt(lk.x, 1, lk.z);
+  fx.shakeI = 0; fx.shakeT = 0;
+  fx.obstacleBloomT = 0;
+  fx.obstacleBloomPeakActive = fx.obstacleBloomPeak;
+  updateBloomIntensity();
+
+  if (avatarMixer && currentAvatarAction) {
+    switchAvatarAnim('Idle_Hold');
+  }
+
+  updateHUD();
+  updateRunTimerHUD();
+  updateBoostHUD();
+  setMode('PLAYING');
+  clock.getDelta();
+}
+
+function togglePause() {
+  if (S.mode === 'PLAYING') { sfx.pauseIn(); setMode('PAUSED'); }
+}
+function resumeGame() {
+  if (S.mode === 'PAUSED') {
+    sfx.pauseOut();
+    clock.getDelta();
+    setMode('PLAYING');
+    bgmResume();
+  }
+}
+
+function formatRunTime() {
+  return `${S.runTime.toFixed(3)}s`;
+}
+
+function triggerLose() {
+  if (S.mode !== 'PLAYING') return;
+  sfx.lose();
+  saveBest();
+  S.result = 'lose';
+  S.tScale = 0;
+  if (avatarMixer) switchAvatarAnim('Death');
+
+  setTimeout(() => {
+    S.tScale = 1;
+    playerGroup.scale.y = 0.6;
+    flashScreen('#ffffff', 0.1);
+  }, 120);
+
+  setTimeout(() => {
+    canvas.style.filter = 'saturate(0.3)';
+  }, 400);
+
+  setTimeout(() => {
+    dom.go.dataset.r = 'lose';
+    dom.rt.textContent = 'GAME OVER';
+    dom.rx.textContent = `Coins: ${S.coins} · Gates cleared: ${S.gatesCorrect} · Time: ${formatRunTime()}`;
+    dom.rb.textContent = S.best > 0 ? `BEST COINS: ${S.best}` : '';
+    setMode('GAME_OVER');
+  }, 800);
+}
+
+function triggerWin() {
+  if (S.mode !== 'PLAYING') return;
+  sfx.winFan();
+  saveBest();
+  S.result = 'win';
+  S.tScale = 0;
+  triggerCrowdWave();
+  emitParticles(playerGroup.position.clone().add(new THREE.Vector3(0, 0.6, 0)), COL.OK, 24, 1.6);
+  flashScreen('#06D6A0', 0.16);
+
+  setTimeout(() => {
+    S.tScale = 1;
+    dom.go.dataset.r = 'win';
+    dom.rt.textContent = 'YOU WIN';
+    dom.rx.textContent = `Coins: ${S.coins} · Gates cleared: ${S.gatesCorrect}/${S.targetGates} · Time: ${formatRunTime()}`;
+    dom.rb.textContent = S.best > 0 ? `BEST COINS: ${S.best}` : '';
+    setMode('GAME_OVER');
+  }, 420);
+}
+
+window._start = startGame;
+window._resume = resumeGame;
+
+// ═══════════════════════════════════════════════════════
+// GLTF CHARACTERS
+// ═══════════════════════════════════════════════════════
+let avatarMixer = null;
+let avatarActions = {};
+let currentAvatarAction = null;
+const crowdMixers = [];
+const crowdModels = [];
+
+function switchAvatarAnim(name) {
+  if (!avatarMixer || !avatarActions[name]) return;
+  const next = avatarActions[name];
+  if (currentAvatarAction === next) return;
+  if (currentAvatarAction) currentAvatarAction.fadeOut(0.15);
+  next.reset().fadeIn(0.15).play();
+  if (name === 'Death' || name === 'HitReact' || name === 'Wave') {
+    next.setLoop(THREE.LoopOnce);
+    next.clampWhenFinished = true;
+  }
+  currentAvatarAction = next;
+}
+
+function triggerCrowdWave() {
+  for (const c of crowdModels) {
+    if (c.actions.Wave) {
+      if (c.current) c.current.fadeOut(0.15);
+      c.actions.Wave.reset().fadeIn(0.15).play();
+      c.actions.Wave.setLoop(THREE.LoopOnce);
+      c.actions.Wave.clampWhenFinished = true;
+      c.current = c.actions.Wave;
+    }
+  }
+}
+
+async function loadCharacters() {
+  const loader = makeGLTFLoader();
+  try {
+    const gltf = await loader.loadAsync('assets/Characters/glTF/Character_Male_1.gltf');
+    const model = gltf.scene;
+    model.traverse(ch => { if (ch.isMesh) { ch.castShadow = true; } });
+
+    const box = new THREE.Box3();
+    model.traverse(ch => {
+      if (ch.isMesh && ch.geometry) {
+        ch.geometry.computeBoundingBox();
+        const mb = ch.geometry.boundingBox.clone();
+        ch.updateWorldMatrix(true, false);
+        mb.applyMatrix4(ch.matrixWorld);
+        box.union(mb);
+      }
+    });
+    const h = box.max.y - box.min.y || 1;
+    model.scale.setScalar(1.6 / h);
+    model.updateMatrixWorld(true);
+    const box2 = new THREE.Box3();
+    model.traverse(ch => {
+      if (ch.isMesh && ch.geometry) {
+        const mb = ch.geometry.boundingBox.clone();
+        mb.applyMatrix4(ch.matrixWorld);
+        box2.union(mb);
+      }
+    });
+    model.position.y = -box2.min.y + 0.32;
+    // Face +Z (road forward). GLTF mesh faces -Z by default; π rotates to match camera look direction.
+    model.rotation.y = Math.PI;
+
+    playerGroup.add(model);
+    applyWorldLayer(playerGroup, L_AVATAR);
+    avatarMixer = new THREE.AnimationMixer(model);
+    for (const clip of gltf.animations) {
+      avatarActions[clip.name] = avatarMixer.clipAction(clip);
+    }
+    switchAvatarAnim('Idle_Hold');
+  } catch (e) {
+    console.warn('Avatar load failed:', e);
+  }
+
+  try {
+    const gltfHb = await loader.loadAsync(assetUrl('assets/hoverboard.glb'));
+    const rootHb = new THREE.Group();
+    const hb = gltfHb.scene;
+    hb.traverse(ch => {
+      if (ch.isMesh) {
+        ch.castShadow = true;
+        ch.receiveShadow = true;
+      }
+    });
+    const boxHb = new THREE.Box3().setFromObject(hb);
+    const sizeHb = new THREE.Vector3();
+    boxHb.getSize(sizeHb);
+    const maxHorizHb = Math.max(sizeHb.x, sizeHb.z, 1e-4);
+    const targetLenHb = 1.12 * 1.5 * 1.5;
+    hb.scale.setScalar(targetLenHb / maxHorizHb);
+    hb.rotation.y = Math.PI + Math.PI / 2;
+    hb.updateMatrixWorld(true);
+    const b2Hb = new THREE.Box3().setFromObject(hb);
+    hb.position.set(0, -b2Hb.min.y, 0);
+    rootHb.add(hb);
+    rootHb.visible = false;
+    vehicleMount.add(rootHb);
+    vehicleNeonGlbRoot = rootHb;
+    applyWorldLayer(rootHb, L_AVATAR);
+    updateVehicleForLaneSide();
+  } catch (e) {
+    console.warn('Hoverboard vehicle load failed:', e);
+  }
+
+  try {
+    const gltfSk = await loader.loadAsync(assetUrl('assets/skateboard.glb'));
+    const root = new THREE.Group();
+    const board = gltfSk.scene;
+    board.traverse(ch => {
+      if (ch.isMesh) {
+        ch.castShadow = true;
+        ch.receiveShadow = true;
+      }
+    });
+    const box = new THREE.Box3().setFromObject(board);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxHoriz = Math.max(size.x, size.z, 1e-4);
+    const targetLen = 2.16;
+    board.scale.setScalar(targetLen / maxHoriz);
+    board.updateMatrixWorld(true);
+    const b2 = new THREE.Box3().setFromObject(board);
+    board.position.set(0, -b2.min.y, 0);
+    board.rotation.y = Math.PI;
+    root.add(board);
+    root.visible = false;
+    vehicleMount.add(root);
+    vehicleSkateboardRoot = root;
+    applyWorldLayer(root, L_AVATAR);
+    updateVehicleForLaneSide();
+  } catch (e) {
+    console.warn('Skateboard vehicle load failed:', e);
+  }
+
+  try {
+    const gltfDrone = await loader.loadAsync(assetUrl('assets/drone.glb'));
+    const root = new THREE.Group();
+    const drone = gltfDrone.scene;
+    drone.traverse((ch) => {
+      if (ch.isMesh) {
+        ch.castShadow = true;
+        ch.receiveShadow = true;
+      }
+    });
+    const box = new THREE.Box3().setFromObject(drone);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z, 1e-4);
+    const targetSize = 2.8;
+    drone.scale.setScalar(targetSize / maxDim);
+    drone.updateMatrixWorld(true);
+    const b2 = new THREE.Box3().setFromObject(drone);
+    drone.position.set(0, -b2.min.y, 0);
+    root.add(drone);
+    scene.add(root);
+    droneFollowerRoot = root;
+    applyWorldLayer(root, L_AVATAR);
+    root.layers.enable(L_BLOOM);
+    updateDroneFollower();
+  } catch (e) {
+    console.warn('Drone load failed:', e);
+  }
+
+  try {
+    const gltf2 = await loader.loadAsync('assets/Characters/glTF/Character_Female_1.gltf');
+    const positions = [
+      { x: -4.2, z: 30, side: 1 },
+      { x: 4.2, z: 30, side: -1 },
+    ];
+    for (const pos of positions) {
+      const clone = SkeletonUtils.clone(gltf2.scene);
+      clone.traverse(ch => { if (ch.isMesh) ch.castShadow = true; });
+      const b = new THREE.Box3();
+      clone.traverse(ch => {
+        if (ch.isMesh && ch.geometry) {
+          ch.geometry.computeBoundingBox();
+          const mb = ch.geometry.boundingBox.clone();
+          ch.updateWorldMatrix(true, false);
+          mb.applyMatrix4(ch.matrixWorld);
+          b.union(mb);
+        }
+      });
+      const ch = b.max.y - b.min.y || 1;
+      clone.scale.setScalar(1.5 / ch);
+      clone.updateMatrixWorld(true);
+      const b2 = new THREE.Box3();
+      clone.traverse(c => {
+        if (c.isMesh && c.geometry) {
+          const mb = c.geometry.boundingBox.clone();
+          mb.applyMatrix4(c.matrixWorld);
+          b2.union(mb);
+        }
+      });
+      clone.position.set(pos.x, -b2.min.y, pos.z);
+      clone.rotation.y = pos.side > 0 ? -Math.PI / 2 : Math.PI / 2;
+      applyWorldLayer(clone, pos.x < 0 ? L_AI : L_REAL);
+      scene.add(clone);
+
+      const mixer = new THREE.AnimationMixer(clone);
+      const actions = {};
+      for (const clip of gltf2.animations) actions[clip.name] = mixer.clipAction(clip);
+      if (actions.Idle) actions.Idle.play();
+      crowdMixers.push(mixer);
+      crowdModels.push({ model: clone, actions, current: actions.Idle || null });
+    }
+  } catch (e) {
+    console.warn('Crowd load failed:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════
+function updateCamera(dt) {
+  const camPathZ = S.pZ + C.CAM_ZOFF;
+  const lookPathZ = S.pZ + C.CAM_LOOK;
+  const camW = worldXZFromPath(0, camPathZ);
+  const lookW = worldXZFromPath(0, lookPathZ);
+  camera.position.z += (camW.z - camera.position.z) * C.CAM_LERP;
+  camera.position.x += (camW.x - camera.position.x) * C.CAM_LERP;
+  camera.position.y = C.CAM_Y;
+
+  camera.lookAt(lookW.x, 1.0, lookW.z);
+  // No camera roll — lateral tilt was rotating the sky / horizon with steering; world stays upright.
+
+  updateShake(dt);
+  // Subtle “zoom” toward the road when the horizon billboard image refreshes (paired with FOV pulse).
+  if (fx.bbPulseOn) {
+    const u = Math.min(fx.bbPulseElapsed / fx.bbPulseDur, 1);
+    const env = Math.sin(Math.PI * u);
+    const dir = new THREE.Vector3();
+    camera.getWorldDirection(dir);
+    camera.position.addScaledVector(dir, env * 0.14);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// GAME LOOP
+// ═══════════════════════════════════════════════════════
+function loop() {
+  const raw = Math.min(clock.getDelta(), 0.1);
+  const dt = raw * S.tScale;
+  S.elapsed += raw;
+
+  if (S.mode === 'PLAYING') {
+    S.runTime += raw;
+    if (S.boostT > 0) S.boostT = Math.max(0, S.boostT - raw);
+    if (S.sprintT > 0) S.sprintT = Math.max(0, S.sprintT - raw);
+    let fwd = C.FWD_SPEED;
+    if (S.boostT > 0) fwd = C.BOOST_SPEED;
+    else if (S.sprintT > 0) fwd = C.SPRINT;
+    S.speed = fwd;
+
+    S.pZ += S.speed * dt;
+    S.curX += (S.tgtX - S.curX) * (1 - Math.exp(-C.LANE_DAMP * raw));
+    const pw = worldXZFromPath(S.curX, S.pZ);
+    playerGroup.position.x = pw.x;
+    playerGroup.position.z = pw.z;
+    playerGroup.position.y = C.VEH_Y + Math.sin(S.elapsed * C.BOB_SPD) * C.BOB_AMP;
+    playerGroup.rotation.y = roadYawAtZ(S.pZ);
+    playerGroup.rotation.z = (S.tgtX - S.curX) * 0.4;
+
+    spawnVehicleTrail(raw);
+    updateVehicleForLaneSide();
+
+    recycleRoad();
+    spawnIfNeeded();
+    trySpawnDueNewspapers();
+    checkDecisions();
+    updateGates();
+    updateHorizonBillboard();
+    updateObstacles();
+    updateBoostPickups(raw);
+    updateCoinPickups(raw);
+    updatePortals(raw);
+    updateRunTimerHUD();
+    updateBoostHUD();
+    if (fx.obstacleBloomT > 0) {
+      fx.obstacleBloomT = Math.max(0, fx.obstacleBloomT - raw);
+    }
+  }
+
+  sfx.tickLaneAmbience(S.mode, S.curX, S.speed / C.FWD_SPEED);
+
+  updateEnvBackdrops(raw);
+  updateDroneFollower();
+
+  worldSplitUniforms.wsSplitTime.value = S.elapsed;
+  worldSplitUniforms.wsSplitOffset.value =
+    Math.sin(S.elapsed * 0.42) * 0.28 + playerGroup.position.x * 0.14;
+  const pzLight = S.pZ;
+  neonPtBlue.position.set(-6.8, 3.1, pzLight + 20);
+  neonPtPurple.position.set(-3.2, 2.2, pzLight + 11);
+  neonPtPink.position.set(-5.1, 3.6, pzLight - 5);
+  updateWorldLightingByPathPosition();
+  updateHorizonBillboardFocusFx(raw);
+  updateCamera(raw);
+  updateDroneBeam(raw);
+  updateParticles(raw);
+  updateVehicleTrail(raw);
+  if (avatarMixer) avatarMixer.update(raw);
+  for (const m of crowdMixers) m.update(raw);
+
+  updateBloomIntensity();
+
+  if (!isMobile && bloomComposer) {
+    scene.traverse(darkenNonBloomedForBloom);
+    bloomComposer.render();
+    scene.traverse(restoreBloomDarkened);
+    finalComposer.render();
+  } else {
+    finalComposer.render();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RESIZE
+// ═══════════════════════════════════════════════════════
+function resize() {
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  if (w === 0 || h === 0) return;
+  renderer.setSize(w, h, false);
+  finalComposer.setSize(w, h);
+  if (bloomComposer) bloomComposer.setSize(w, h);
+}
+window.addEventListener('resize', resize);
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+(function init() {
+  initRoad();
+  // Disabled legacy skyline systems while validating mirrored tile env placement.
+  // This avoids loading extra/unused skyline objects during current testing.
+  buildVehicle();
+  initGates();
+  buildHorizonBillboard();
+  initParticles();
+  initVehicleTrail();
+  updateBestDisplay();
+  resize();
+  updateWorldLightingByPathPosition();
+  updateBloomIntensity();
+
+  const ic = worldXZFromPath(0, C.CAM_ZOFF);
+  const il = worldXZFromPath(0, C.CAM_LOOK);
+  camera.position.set(ic.x, C.CAM_Y, ic.z);
+  camera.lookAt(il.x, 1, il.z);
+
+  setMode('MENU');
+  clock.start();
+  renderer.setAnimationLoop(loop);
+
+  loadCharacters();
+  loadNewspaperAsset();
+  loadEnvAssets();
+  loadAiEnvAssets();
+})();
+</script>
+<script async src="https://vibejam.cc/2026/widget.js"></script>
+</body>
+</html>

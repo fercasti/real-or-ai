@@ -1,0 +1,1694 @@
+{
+  "version": "1.0",
+  "basePath": "/assets",
+  "categories": {
+    "characters": {
+      "basePath": "/assets/Characters/glTF",
+      "items": [
+        {
+          "id": "character_female_1",
+          "name": "Female Character 1",
+          "file": "Character_Female_1.gltf",
+          "path": "/assets/Characters/glTF/Character_Female_1.gltf",
+          "type": "model",
+          "format": "gltf",
+          "gender": "female",
+          "variant": 1,
+          "armature": "CharacterArmature",
+          "mesh": "Cube.000",
+          "material": "Atlas",
+          "skeleton": [
+            "Root",
+            "Hips",
+            "Abdomen",
+            "Torso",
+            "Neck",
+            "Head",
+            "Shoulder.L",
+            "UpperArm.L",
+            "LowerArm.L",
+            "Fist.L",
+            "Shoulder.R",
+            "UpperArm.R",
+            "LowerArm.R",
+            "Fist.R",
+            "UpperLeg.L",
+            "LowerLeg.L",
+            "Foot.L",
+            "UpperLeg.R",
+            "LowerLeg.R",
+            "Foot.R",
+            "PoleTarget.L",
+            "PoleTarget.R",
+            "Body"
+          ],
+          "animations": [
+            "Death",
+            "Duck",
+            "HitReact",
+            "Idle",
+            "Idle_Attack",
+            "Idle_Hold",
+            "Jump",
+            "Jump_Idle",
+            "Jump_Land",
+            "No",
+            "Punch",
+            "Run",
+            "Run_Attack",
+            "Run_Hold",
+            "Walk",
+            "Walk_Hold",
+            "Wave",
+            "Yes"
+          ]
+        },
+        {
+          "id": "character_female_2",
+          "name": "Female Character 2",
+          "file": "Character_Female_2.gltf",
+          "path": "/assets/Characters/glTF/Character_Female_2.gltf",
+          "type": "model",
+          "format": "gltf",
+          "gender": "female",
+          "variant": 2,
+          "armature": "CharacterArmature",
+          "mesh": "Cube.000",
+          "material": "Atlas",
+          "skeleton": [
+            "Root",
+            "Hips",
+            "Abdomen",
+            "Torso",
+            "Neck",
+            "Head",
+            "Shoulder.L",
+            "UpperArm.L",
+            "LowerArm.L",
+            "Fist.L",
+            "Shoulder.R",
+            "UpperArm.R",
+            "LowerArm.R",
+            "Fist.R",
+            "UpperLeg.L",
+            "LowerLeg.L",
+            "Foot.L",
+            "UpperLeg.R",
+            "LowerLeg.R",
+            "Foot.R",
+            "PoleTarget.L",
+            "PoleTarget.R",
+            "Body"
+          ],
+          "animations": [
+            "Death",
+            "Duck",
+            "HitReact",
+            "Idle",
+            "Idle_Attack",
+            "Idle_Hold",
+            "Jump",
+            "Jump_Idle",
+            "Jump_Land",
+            "No",
+            "Punch",
+            "Run",
+            "Run_Attack",
+            "Run_Hold",
+            "Walk",
+            "Walk_Hold",
+            "Wave",
+            "Yes"
+          ]
+        },
+        {
+          "id": "character_male_1",
+          "name": "Male Character 1",
+          "file": "Character_Male_1.gltf",
+          "path": "/assets/Characters/glTF/Character_Male_1.gltf",
+          "type": "model",
+          "format": "gltf",
+          "gender": "male",
+          "variant": 1,
+          "armature": "CharacterArmature",
+          "mesh": "Cube.000",
+          "material": "Atlas",
+          "skeleton": [
+            "Root",
+            "Hips",
+            "Abdomen",
+            "Torso",
+            "Neck",
+            "Head",
+            "Shoulder.L",
+            "UpperArm.L",
+            "LowerArm.L",
+            "Fist.L",
+            "Shoulder.R",
+            "UpperArm.R",
+            "LowerArm.R",
+            "Fist.R",
+            "UpperLeg.L",
+            "LowerLeg.L",
+            "Foot.L",
+            "UpperLeg.R",
+            "LowerLeg.R",
+            "Foot.R",
+            "PoleTarget.L",
+            "PoleTarget.R",
+            "Body"
+          ],
+          "animations": [
+            "Death",
+            "Duck",
+            "HitReact",
+            "Idle",
+            "Idle_Attack",
+            "Idle_Hold",
+            "Jump",
+            "Jump_Idle",
+            "Jump_Land",
+            "No",
+            "Punch",
+            "Run",
+            "Run_Attack",
+            "Run_Hold",
+            "Walk",
+            "Walk_Hold",
+            "Wave",
+            "Yes"
+          ]
+        },
+        {
+          "id": "character_male_2",
+          "name": "Male Character 2",
+          "file": "Character_Male_2.gltf",
+          "path": "/assets/Characters/glTF/Character_Male_2.gltf",
+          "type": "model",
+          "format": "gltf",
+          "gender": "male",
+          "variant": 2,
+          "armature": "CharacterArmature",
+          "mesh": "Cube.000",
+          "material": "Atlas",
+          "skeleton": [
+            "Root",
+            "Hips",
+            "Abdomen",
+            "Torso",
+            "Neck",
+            "Head",
+            "Shoulder.L",
+            "UpperArm.L",
+            "LowerArm.L",
+            "Fist.L",
+            "Shoulder.R",
+            "UpperArm.R",
+            "LowerArm.R",
+            "Fist.R",
+            "UpperLeg.L",
+            "LowerLeg.L",
+            "Foot.L",
+            "UpperLeg.R",
+            "LowerLeg.R",
+            "Foot.R",
+            "PoleTarget.L",
+            "PoleTarget.R",
+            "Body"
+          ],
+          "animations": [
+            "Death",
+            "Duck",
+            "HitReact",
+            "Idle",
+            "Idle_Attack",
+            "Idle_Hold",
+            "Jump",
+            "Jump_Idle",
+            "Jump_Land",
+            "No",
+            "Punch",
+            "Run",
+            "Run_Attack",
+            "Run_Hold",
+            "Walk",
+            "Walk_Hold",
+            "Wave",
+            "Yes"
+          ]
+        },
+        {
+          "id": "wolf",
+          "name": "Wolf",
+          "file": "Wolf.glb",
+          "path": "/assets/Characters/glTF/Wolf.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "security_guard_rigged_3d_model",
+          "name": "Security Guard Rigged 3d Model",
+          "file": "security_guard__rigged_3d_model.glb",
+          "path": "/assets/Characters/glTF/security_guard__rigged_3d_model.glb",
+          "type": "model",
+          "format": "glb"
+        }
+      ]
+    },
+    "environment": {
+      "basePath": "/assets/Environment/glTF",
+      "items": [
+        {
+          "id": "building",
+          "name": "Building",
+          "file": "building.glb",
+          "path": "/assets/Environment/glTF/building.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building1",
+          "name": "Building1",
+          "file": "building1.glb",
+          "path": "/assets/Environment/glTF/building1.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building2",
+          "name": "Building2",
+          "file": "building2.glb",
+          "path": "/assets/Environment/glTF/building2.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "cyberpunk_building",
+          "name": "Cyberpunk Building",
+          "file": "cyberpunk_building.glb",
+          "path": "/assets/Environment/glTF/cyberpunk_building.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "g1_cyberpunk_building",
+          "name": "G1 Cyberpunk Building",
+          "file": "g1_cyberpunk_building.glb",
+          "path": "/assets/Environment/glTF/g1_cyberpunk_building.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_poly_tree",
+          "name": "Low Poly Tree",
+          "file": "low-poly_tree.glb",
+          "path": "/assets/Environment/glTF/low-poly_tree.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "neon_sign_open",
+          "name": "Neon Sign Open",
+          "file": "neon_sign_open.glb",
+          "path": "/assets/Environment/glTF/neon_sign_open.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "tropical_palm_tree",
+          "name": "Tropical Palm Tree",
+          "file": "tropical_palm_tree.glb",
+          "path": "/assets/Environment/glTF/tropical_palm_tree.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "vaporwave_grid_animated",
+          "name": "Vaporwave Grid Animated",
+          "file": "vaporwave_grid_animated.glb",
+          "path": "/assets/Environment/glTF/vaporwave_grid_animated.glb",
+          "type": "model",
+          "format": "glb"
+        }
+      ]
+    },
+    "images": {
+      "basePath": "/assets/images",
+      "items": [
+        {
+          "id": "ai",
+          "name": "AI",
+          "file": "AI.png",
+          "path": "/assets/images/AI.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "ai_image",
+          "name": "AI Image",
+          "file": "AI_image.png",
+          "path": "/assets/images/AI_image.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "ai_image2",
+          "name": "AI Image2",
+          "file": "AI_image2.png",
+          "path": "/assets/images/AI_image2.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "ai_image3",
+          "name": "AI Image3",
+          "file": "AI_image3.png",
+          "path": "/assets/images/AI_image3.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "ai_image4",
+          "name": "AI Image4",
+          "file": "AI_image4.png",
+          "path": "/assets/images/AI_image4.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "ai_image5",
+          "name": "AI Image5",
+          "file": "AI_image5.png",
+          "path": "/assets/images/AI_image5.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "real_ai_transparent",
+          "name": "REAL AI Transparent",
+          "file": "REAL AI transparent.png",
+          "path": "/assets/images/REAL AI transparent.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "real_ai",
+          "name": "REAL AI",
+          "file": "REAL AI.png",
+          "path": "/assets/images/REAL AI.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "real",
+          "name": "REAL",
+          "file": "REAL.png",
+          "path": "/assets/images/REAL.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "ai_image6",
+          "name": "Ai Image6",
+          "file": "ai_image6.png",
+          "path": "/assets/images/ai_image6.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "beam",
+          "name": "Beam",
+          "file": "beam.avif",
+          "path": "/assets/images/beam.avif",
+          "type": "image",
+          "format": "avif"
+        },
+        {
+          "id": "circle_particles",
+          "name": "Circle Particles",
+          "file": "circle_particles.avif",
+          "path": "/assets/images/circle_particles.avif",
+          "type": "image",
+          "format": "avif"
+        },
+        {
+          "id": "city_skyline",
+          "name": "City Skyline",
+          "file": "city_skyline.png",
+          "path": "/assets/images/city_skyline.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "grid_lines",
+          "name": "Grid Lines",
+          "file": "grid_lines.avif",
+          "path": "/assets/images/grid_lines.avif",
+          "type": "image",
+          "format": "avif"
+        },
+        {
+          "id": "grid_twocolors",
+          "name": "Grid Twocolors",
+          "file": "grid_twocolors.png",
+          "path": "/assets/images/grid_twocolors.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "nebula_sky",
+          "name": "Nebula Sky",
+          "file": "nebula_sky.jpg",
+          "path": "/assets/images/nebula_sky.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "neon_grid",
+          "name": "Neon Grid",
+          "file": "neon_grid.jpg",
+          "path": "/assets/images/neon_grid.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "particle_light",
+          "name": "Particle Light",
+          "file": "particle_light.png",
+          "path": "/assets/images/particle_light.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "real_image",
+          "name": "Real Image",
+          "file": "real_image.jfif",
+          "path": "/assets/images/real_image.jfif",
+          "type": "file",
+          "format": "jfif"
+        },
+        {
+          "id": "real_image10",
+          "name": "Real Image10",
+          "file": "real_image10.jpg",
+          "path": "/assets/images/real_image10.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image12",
+          "name": "Real Image12",
+          "file": "real_image12.jpeg",
+          "path": "/assets/images/real_image12.jpeg",
+          "type": "image",
+          "format": "jpeg"
+        },
+        {
+          "id": "real_image13",
+          "name": "Real Image13",
+          "file": "real_image13.jpeg",
+          "path": "/assets/images/real_image13.jpeg",
+          "type": "image",
+          "format": "jpeg"
+        },
+        {
+          "id": "real_image14",
+          "name": "Real Image14",
+          "file": "real_image14.jpeg",
+          "path": "/assets/images/real_image14.jpeg",
+          "type": "image",
+          "format": "jpeg"
+        },
+        {
+          "id": "real_image15",
+          "name": "Real Image15",
+          "file": "real_image15.jpg",
+          "path": "/assets/images/real_image15.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image16",
+          "name": "Real Image16",
+          "file": "real_image16.jpg",
+          "path": "/assets/images/real_image16.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image2",
+          "name": "Real Image2",
+          "file": "real_image2.jfif",
+          "path": "/assets/images/real_image2.jfif",
+          "type": "file",
+          "format": "jfif"
+        },
+        {
+          "id": "real_image2",
+          "name": "Real Image2",
+          "file": "real_image2.jpg",
+          "path": "/assets/images/real_image2.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image3",
+          "name": "Real Image3",
+          "file": "real_image3.jfif",
+          "path": "/assets/images/real_image3.jfif",
+          "type": "file",
+          "format": "jfif"
+        },
+        {
+          "id": "real_image3",
+          "name": "Real Image3",
+          "file": "real_image3.jpg",
+          "path": "/assets/images/real_image3.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image4",
+          "name": "Real Image4",
+          "file": "real_image4.jpg",
+          "path": "/assets/images/real_image4.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image5",
+          "name": "Real Image5",
+          "file": "real_image5.jpg",
+          "path": "/assets/images/real_image5.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image6",
+          "name": "Real Image6",
+          "file": "real_image6.jpg",
+          "path": "/assets/images/real_image6.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image7",
+          "name": "Real Image7",
+          "file": "real_image7.jpg",
+          "path": "/assets/images/real_image7.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image8",
+          "name": "Real Image8",
+          "file": "real_image8.jpg",
+          "path": "/assets/images/real_image8.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "real_image9",
+          "name": "Real Image9",
+          "file": "real_image9.webp",
+          "path": "/assets/images/real_image9.webp",
+          "type": "image",
+          "format": "webp"
+        },
+        {
+          "id": "reference_scenelook",
+          "name": "Reference Scenelook",
+          "file": "reference_scenelook.png",
+          "path": "/assets/images/reference_scenelook.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "road",
+          "name": "Road",
+          "file": "road.jpg",
+          "path": "/assets/images/road.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "screen_panel",
+          "name": "Screen Panel",
+          "file": "screen_panel.png",
+          "path": "/assets/images/screen_panel.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "sky2",
+          "name": "Sky2",
+          "file": "sky2.jpg",
+          "path": "/assets/images/sky2.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "sky3",
+          "name": "Sky3",
+          "file": "sky3.jpg",
+          "path": "/assets/images/sky3.jpg",
+          "type": "image",
+          "format": "jpg"
+        },
+        {
+          "id": "skybox",
+          "name": "Skybox",
+          "file": "skybox.png",
+          "path": "/assets/images/skybox.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "vaporwave_grid",
+          "name": "Vaporwave Grid",
+          "file": "vaporwave_grid.jpg",
+          "path": "/assets/images/vaporwave_grid.jpg",
+          "type": "image",
+          "format": "jpg"
+        }
+      ]
+    },
+    "video": {
+      "basePath": "/assets",
+      "items": [
+        {
+          "id": "3",
+          "name": "3",
+          "file": "3.mp4",
+          "path": "/assets/3.mp4",
+          "type": "video",
+          "format": "mp4"
+        }
+      ]
+    },
+    "references": {
+      "basePath": "/assets",
+      "items": [
+        {
+          "id": "reference_realorai",
+          "name": "Reference Realorai",
+          "file": "reference_realorai.png",
+          "path": "/assets/reference_realorai.png",
+          "type": "image",
+          "format": "png"
+        }
+      ]
+    },
+    "kenney_city_kit_models": {
+      "basePath": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format",
+      "items": [
+        {
+          "id": "building_a",
+          "name": "Building A",
+          "file": "building-a.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-a.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_b",
+          "name": "Building B",
+          "file": "building-b.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-b.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_c",
+          "name": "Building C",
+          "file": "building-c.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-c.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_d",
+          "name": "Building D",
+          "file": "building-d.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-d.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_e",
+          "name": "Building E",
+          "file": "building-e.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-e.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_f",
+          "name": "Building F",
+          "file": "building-f.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-f.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_g",
+          "name": "Building G",
+          "file": "building-g.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-g.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_h",
+          "name": "Building H",
+          "file": "building-h.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-h.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_i",
+          "name": "Building I",
+          "file": "building-i.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-i.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_j",
+          "name": "Building J",
+          "file": "building-j.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-j.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_k",
+          "name": "Building K",
+          "file": "building-k.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-k.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_l",
+          "name": "Building L",
+          "file": "building-l.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-l.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_m",
+          "name": "Building M",
+          "file": "building-m.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-m.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_n",
+          "name": "Building N",
+          "file": "building-n.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-n.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_skyscraper_a",
+          "name": "Building Skyscraper A",
+          "file": "building-skyscraper-a.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-a.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_skyscraper_b",
+          "name": "Building Skyscraper B",
+          "file": "building-skyscraper-b.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-b.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_skyscraper_c",
+          "name": "Building Skyscraper C",
+          "file": "building-skyscraper-c.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-c.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_skyscraper_d",
+          "name": "Building Skyscraper D",
+          "file": "building-skyscraper-d.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-d.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "building_skyscraper_e",
+          "name": "Building Skyscraper E",
+          "file": "building-skyscraper-e.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/building-skyscraper-e.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "detail_awning_wide",
+          "name": "Detail Awning Wide",
+          "file": "detail-awning-wide.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/detail-awning-wide.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "detail_awning",
+          "name": "Detail Awning",
+          "file": "detail-awning.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/detail-awning.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "detail_overhang_wide",
+          "name": "Detail Overhang Wide",
+          "file": "detail-overhang-wide.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/detail-overhang-wide.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "detail_overhang",
+          "name": "Detail Overhang",
+          "file": "detail-overhang.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/detail-overhang.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "detail_parasol_a",
+          "name": "Detail Parasol A",
+          "file": "detail-parasol-a.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/detail-parasol-a.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "detail_parasol_b",
+          "name": "Detail Parasol B",
+          "file": "detail-parasol-b.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/detail-parasol-b.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_a",
+          "name": "Low Detail Building A",
+          "file": "low-detail-building-a.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-a.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_b",
+          "name": "Low Detail Building B",
+          "file": "low-detail-building-b.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-b.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_c",
+          "name": "Low Detail Building C",
+          "file": "low-detail-building-c.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-c.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_d",
+          "name": "Low Detail Building D",
+          "file": "low-detail-building-d.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-d.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_e",
+          "name": "Low Detail Building E",
+          "file": "low-detail-building-e.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-e.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_f",
+          "name": "Low Detail Building F",
+          "file": "low-detail-building-f.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-f.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_g",
+          "name": "Low Detail Building G",
+          "file": "low-detail-building-g.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-g.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_h",
+          "name": "Low Detail Building H",
+          "file": "low-detail-building-h.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-h.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_i",
+          "name": "Low Detail Building I",
+          "file": "low-detail-building-i.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-i.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_j",
+          "name": "Low Detail Building J",
+          "file": "low-detail-building-j.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-j.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_k",
+          "name": "Low Detail Building K",
+          "file": "low-detail-building-k.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-k.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_l",
+          "name": "Low Detail Building L",
+          "file": "low-detail-building-l.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-l.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_m",
+          "name": "Low Detail Building M",
+          "file": "low-detail-building-m.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-m.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_n",
+          "name": "Low Detail Building N",
+          "file": "low-detail-building-n.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-n.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_wide_a",
+          "name": "Low Detail Building Wide A",
+          "file": "low-detail-building-wide-a.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-wide-a.glb",
+          "type": "model",
+          "format": "glb"
+        },
+        {
+          "id": "low_detail_building_wide_b",
+          "name": "Low Detail Building Wide B",
+          "file": "low-detail-building-wide-b.glb",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/low-detail-building-wide-b.glb",
+          "type": "model",
+          "format": "glb"
+        }
+      ]
+    },
+    "kenney_city_kit_textures": {
+      "basePath": "/assets/kenney_city-kit-commercial_2.1/Models/Textures",
+      "items": [
+        {
+          "id": "variation_a",
+          "name": "Variation A",
+          "file": "variation-a.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/Textures/variation-a.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "variation_b",
+          "name": "Variation B",
+          "file": "variation-b.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/Textures/variation-b.png",
+          "type": "image",
+          "format": "png"
+        }
+      ]
+    },
+    "kenney_city_kit_previews": {
+      "basePath": "/assets/kenney_city-kit-commercial_2.1/Previews",
+      "items": [
+        {
+          "id": "building_a",
+          "name": "Building A",
+          "file": "building-a.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-a.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_b",
+          "name": "Building B",
+          "file": "building-b.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-b.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_c",
+          "name": "Building C",
+          "file": "building-c.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-c.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_d",
+          "name": "Building D",
+          "file": "building-d.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-d.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_e",
+          "name": "Building E",
+          "file": "building-e.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-e.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_f",
+          "name": "Building F",
+          "file": "building-f.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-f.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_g",
+          "name": "Building G",
+          "file": "building-g.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-g.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_h",
+          "name": "Building H",
+          "file": "building-h.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-h.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_i",
+          "name": "Building I",
+          "file": "building-i.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-i.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_j",
+          "name": "Building J",
+          "file": "building-j.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-j.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_k",
+          "name": "Building K",
+          "file": "building-k.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-k.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_l",
+          "name": "Building L",
+          "file": "building-l.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-l.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_m",
+          "name": "Building M",
+          "file": "building-m.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-m.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_n",
+          "name": "Building N",
+          "file": "building-n.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-n.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_skyscraper_a",
+          "name": "Building Skyscraper A",
+          "file": "building-skyscraper-a.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-skyscraper-a.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_skyscraper_b",
+          "name": "Building Skyscraper B",
+          "file": "building-skyscraper-b.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-skyscraper-b.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_skyscraper_c",
+          "name": "Building Skyscraper C",
+          "file": "building-skyscraper-c.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-skyscraper-c.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_skyscraper_d",
+          "name": "Building Skyscraper D",
+          "file": "building-skyscraper-d.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-skyscraper-d.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "building_skyscraper_e",
+          "name": "Building Skyscraper E",
+          "file": "building-skyscraper-e.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/building-skyscraper-e.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "detail_awning_wide",
+          "name": "Detail Awning Wide",
+          "file": "detail-awning-wide.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/detail-awning-wide.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "detail_awning",
+          "name": "Detail Awning",
+          "file": "detail-awning.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/detail-awning.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "detail_overhang_wide",
+          "name": "Detail Overhang Wide",
+          "file": "detail-overhang-wide.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/detail-overhang-wide.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "detail_overhang",
+          "name": "Detail Overhang",
+          "file": "detail-overhang.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/detail-overhang.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "detail_parasol_a",
+          "name": "Detail Parasol A",
+          "file": "detail-parasol-a.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/detail-parasol-a.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "detail_parasol_b",
+          "name": "Detail Parasol B",
+          "file": "detail-parasol-b.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/detail-parasol-b.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_a",
+          "name": "Low Detail Building A",
+          "file": "low-detail-building-a.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-a.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_b",
+          "name": "Low Detail Building B",
+          "file": "low-detail-building-b.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-b.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_c",
+          "name": "Low Detail Building C",
+          "file": "low-detail-building-c.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-c.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_d",
+          "name": "Low Detail Building D",
+          "file": "low-detail-building-d.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-d.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_e",
+          "name": "Low Detail Building E",
+          "file": "low-detail-building-e.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-e.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_f",
+          "name": "Low Detail Building F",
+          "file": "low-detail-building-f.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-f.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_g",
+          "name": "Low Detail Building G",
+          "file": "low-detail-building-g.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-g.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_h",
+          "name": "Low Detail Building H",
+          "file": "low-detail-building-h.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-h.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_i",
+          "name": "Low Detail Building I",
+          "file": "low-detail-building-i.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-i.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_j",
+          "name": "Low Detail Building J",
+          "file": "low-detail-building-j.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-j.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_k",
+          "name": "Low Detail Building K",
+          "file": "low-detail-building-k.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-k.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_l",
+          "name": "Low Detail Building L",
+          "file": "low-detail-building-l.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-l.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_m",
+          "name": "Low Detail Building M",
+          "file": "low-detail-building-m.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-m.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_n",
+          "name": "Low Detail Building N",
+          "file": "low-detail-building-n.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-n.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_wide_a",
+          "name": "Low Detail Building Wide A",
+          "file": "low-detail-building-wide-a.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-wide-a.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "low_detail_building_wide_b",
+          "name": "Low Detail Building Wide B",
+          "file": "low-detail-building-wide-b.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Previews/low-detail-building-wide-b.png",
+          "type": "image",
+          "format": "png"
+        }
+      ]
+    },
+    "kenney_city_kit_pack": {
+      "basePath": "/assets/kenney_city-kit-commercial_2.1",
+      "items": [
+        {
+          "id": "license",
+          "name": "License",
+          "file": "License.txt",
+          "path": "/assets/kenney_city-kit-commercial_2.1/License.txt",
+          "type": "document",
+          "format": "txt"
+        },
+        {
+          "id": "colormap",
+          "name": "Colormap",
+          "file": "colormap.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Models/GLB format/Textures/colormap.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "overview",
+          "name": "Overview",
+          "file": "Overview.html",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Overview.html",
+          "type": "document",
+          "format": "html"
+        },
+        {
+          "id": "preview_variation_a",
+          "name": "Preview (Variation A)",
+          "file": "Preview (Variation A).png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Preview (Variation A).png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "preview_variation_b",
+          "name": "Preview (Variation B)",
+          "file": "Preview (Variation B).png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Preview (Variation B).png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "preview",
+          "name": "Preview",
+          "file": "Preview.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Preview.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "sample",
+          "name": "Sample",
+          "file": "Sample.png",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Sample.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "view_documentation",
+          "name": "View Documentation",
+          "file": "View Documentation.url",
+          "path": "/assets/kenney_city-kit-commercial_2.1/View Documentation.url",
+          "type": "document",
+          "format": "url"
+        },
+        {
+          "id": "visit_kenney",
+          "name": "Visit Kenney",
+          "file": "Visit Kenney.url",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Visit Kenney.url",
+          "type": "document",
+          "format": "url"
+        },
+        {
+          "id": "visit_patreon",
+          "name": "Visit Patreon",
+          "file": "Visit Patreon.url",
+          "path": "/assets/kenney_city-kit-commercial_2.1/Visit Patreon.url",
+          "type": "document",
+          "format": "url"
+        }
+      ]
+    },
+    "kenney_development_essentials": {
+      "basePath": "/assets/kenney_development-essentials",
+      "items": [
+        {
+          "id": "pixel_black",
+          "name": "Pixel Black",
+          "file": "pixel-black.png",
+          "path": "/assets/kenney_development-essentials/1×1 Pixels/pixel-black.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "pixel_transparent",
+          "name": "Pixel Transparent",
+          "file": "pixel-transparent.png",
+          "path": "/assets/kenney_development-essentials/1×1 Pixels/pixel-transparent.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "pixel_white",
+          "name": "Pixel White",
+          "file": "pixel-white.png",
+          "path": "/assets/kenney_development-essentials/1×1 Pixels/pixel-white.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "pixel_black",
+          "name": "Pixel Black",
+          "file": "pixel-black.png",
+          "path": "/assets/kenney_development-essentials/4×4 Pixels/pixel-black.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "pixel_transparent",
+          "name": "Pixel Transparent",
+          "file": "pixel-transparent.png",
+          "path": "/assets/kenney_development-essentials/4×4 Pixels/pixel-transparent.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "pixel_white",
+          "name": "Pixel White",
+          "file": "pixel-white.png",
+          "path": "/assets/kenney_development-essentials/4×4 Pixels/pixel-white.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "checkerboard_transparent",
+          "name": "Checkerboard Transparent",
+          "file": "checkerboard-transparent.png",
+          "path": "/assets/kenney_development-essentials/Checkerboard/checkerboard-transparent.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "checkerboard",
+          "name": "Checkerboard",
+          "file": "checkerboard.png",
+          "path": "/assets/kenney_development-essentials/Checkerboard/checkerboard.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "gradient_angular",
+          "name": "Gradient Angular",
+          "file": "gradient-angular.png",
+          "path": "/assets/kenney_development-essentials/Gradient/gradient-angular.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "gradient_horizontal_mirror",
+          "name": "Gradient Horizontal Mirror",
+          "file": "gradient-horizontal-mirror.png",
+          "path": "/assets/kenney_development-essentials/Gradient/gradient-horizontal-mirror.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "gradient_horizontal",
+          "name": "Gradient Horizontal",
+          "file": "gradient-horizontal.png",
+          "path": "/assets/kenney_development-essentials/Gradient/gradient-horizontal.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "gradient_radial",
+          "name": "Gradient Radial",
+          "file": "gradient-radial.png",
+          "path": "/assets/kenney_development-essentials/Gradient/gradient-radial.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "gradient_vertical_mirror",
+          "name": "Gradient Vertical Mirror",
+          "file": "gradient-vertical-mirror.png",
+          "path": "/assets/kenney_development-essentials/Gradient/gradient-vertical-mirror.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "gradient_vertical",
+          "name": "Gradient Vertical",
+          "file": "gradient-vertical.png",
+          "path": "/assets/kenney_development-essentials/Gradient/gradient-vertical.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "license",
+          "name": "License",
+          "file": "License.txt",
+          "path": "/assets/kenney_development-essentials/License.txt",
+          "type": "document",
+          "format": "txt"
+        },
+        {
+          "id": "perlin_noise_small",
+          "name": "Perlin Noise Small",
+          "file": "perlin-noise-small.png",
+          "path": "/assets/kenney_development-essentials/Noise/perlin-noise-small.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "perlin_noise",
+          "name": "Perlin Noise",
+          "file": "perlin-noise.png",
+          "path": "/assets/kenney_development-essentials/Noise/perlin-noise.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "default_normal",
+          "name": "Default Normal",
+          "file": "default-normal.png",
+          "path": "/assets/kenney_development-essentials/Normal map/default-normal.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "preview",
+          "name": "Preview",
+          "file": "Preview.png",
+          "path": "/assets/kenney_development-essentials/Preview.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "uv_texture",
+          "name": "Uv Texture",
+          "file": "uv-texture.png",
+          "path": "/assets/kenney_development-essentials/UV texture/uv-texture.png",
+          "type": "image",
+          "format": "png"
+        },
+        {
+          "id": "visit_kenney",
+          "name": "Visit Kenney",
+          "file": "Visit Kenney.url",
+          "path": "/assets/kenney_development-essentials/Visit Kenney.url",
+          "type": "document",
+          "format": "url"
+        },
+        {
+          "id": "visit_patreon",
+          "name": "Visit Patreon",
+          "file": "Visit Patreon.url",
+          "path": "/assets/kenney_development-essentials/Visit Patreon.url",
+          "type": "document",
+          "format": "url"
+        }
+      ]
+    }
+  },
+  "summary": {
+    "totalAssets": 175,
+    "totalCategories": 10,
+    "formats": [
+      "avif",
+      "glb",
+      "gltf",
+      "html",
+      "jfif",
+      "jpeg",
+      "jpg",
+      "mp4",
+      "png",
+      "txt",
+      "url",
+      "webp"
+    ],
+    "sharedAnimations": [
+      "Death",
+      "Duck",
+      "HitReact",
+      "Idle",
+      "Idle_Attack",
+      "Idle_Hold",
+      "Jump",
+      "Jump_Idle",
+      "Jump_Land",
+      "No",
+      "Punch",
+      "Run",
+      "Run_Attack",
+      "Run_Hold",
+      "Walk",
+      "Walk_Hold",
+      "Wave",
+      "Yes"
+    ]
+  }
+}
