@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "music": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "b12b153fa9439fb03e5f8afa1fef0e6ec381d49c5b92afebbbca3b6a1c3abbe5"
+    },
+    "sound-effects": {
+      "source": "elevenlabs/skills",
+      "sourceType": "github",
+      "computedHash": "49dba2b616f4a9b3fcd210c6b8019e0a9909994c7b56c8aebbffbecda61b9f93"
+    }
+  }
+}
