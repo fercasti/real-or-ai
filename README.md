@@ -1,4 +1,3 @@
-play at https://fercasti.github.io/real-or-ai/
 # Real or AI — **AI Race**
 
 A browser **endless runner** built with **Three.js** (WebGL). You drive down a split highway: one side is labeled **AI**, the other **REAL**. The run is about reacting fast—stay in the lane that matches the moment, dodge obstacles, collect coins for score, and use a short speed boost when you need it.
